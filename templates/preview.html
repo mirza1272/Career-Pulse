@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+{# Phase 11: read-only preview step. Shows the resume exactly as it will be #}
+{# sent (the PDF renderer's own output, embedded), the traceable ATS #}
+{# breakdown, and the JD↔KB gap report summary. No edit controls here. #}
+
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1>Preview — {{ a.job_title or "Application" }}{% if a.company %} — {{ a.company }}{% endif %}</h1>
+    <div class="meta">
+      Status: <span class="badge">{{ a.status }}</span>
+      {% if a.ats_score %}
+        &nbsp;·&nbsp; ATS Score:
+        <span class="badge" style="font-weight:700; {% if a.ats_score >= 87 %}background:#064e3b; color:var(--green); border:1px solid #059669;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+          {{ "%.0f"|format(a.ats_score) }}/100
+        </span>
+        <span class="muted" style="font-size:12px;">(target 87+)</span>
+      {% endif %}
+    </div>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <a class="btn secondary" href="/application/{{ a.id }}" style="text-decoration:none;">← Back to editor</a>
+    {% if (a.status or "draft") in ("draft", "ready", "pending") %}
+    <form method="post" action="/application/{{ a.id }}/submit-for-approval" style="display:inline; margin:0;">
+      <button type="submit" class="btn" style="margin:0; background:var(--green); color:#0e1015;">
+        Submit for approval
+      </button>
+    </form>
+    {% elif a.status == "pending_approval" %}
+    <span class="badge" style="background:#352507; color:var(--yellow); border:1px solid #6b4d0e; font-size:13px; padding:8px 14px;">Awaiting your approval</span>
+    {% elif a.status == "approved" %}
+    <span class="badge" style="background:#064e3b; color:var(--green); border:1px solid #059669; font-size:13px; padding:8px 14px;">Approved — ready to send</span>
+    {% elif a.status == "sent" %}
+    <span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230; font-size:13px; padding:8px 14px;">SENT</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if submitted %}
+<div class="card" style="background:#0f2e1b; border:1px solid #1c5230; margin-bottom:20px; padding:14px 18px;">
+  <strong style="color:var(--green);">Submitted for approval.</strong>
+  <span class="muted">Review the preview below, then approve from the application page. Nothing sends until you approve and send explicitly.</span>
+</div>
+{% endif %}
+
+{% if error %}
+<div class="card" style="background:#3a1d1d; border:1px solid #7a2e2e; margin-bottom:20px; padding:14px 18px;">
+  <strong style="color:#ff7a88;">PDF issue:</strong>
+  <span style="color:#e2e8f0;">{{ error }}</span>
+</div>
+{% endif %}
+
+<div style="display:grid; grid-template-columns: 1fr 380px; gap:20px; align-items:start;" class="preview-grid">
+  <div class="card" style="padding:12px; background:#0b0d12;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 8px 10px; flex-wrap:wrap; gap:8px;">
+      <div class="muted" style="font-size:12px;">Resume as it will be sent (PDF renderer output)</div>
+      <form method="post" action="/application/{{ a.id }}/pdf-pages" style="display:inline-flex; align-items:center; gap:6px; margin:0;">
+        <label for="pdf_pages_select" style="margin:0; font-size:12px; color:var(--muted);">PDF pages:</label>
+        <select id="pdf_pages_select" name="pages" onchange="this.form.submit()" style="padding:3px 8px; font-size:12px; border-radius:4px; background:#13151c; color:#fff; border:1px solid var(--line);">
+          <option value="1" {% if a.pdf_page_target == 1 %}selected{% endif %}>1 page</option>
+          <option value="2" {% if a.pdf_page_target == 2 %}selected{% endif %}>2 pages</option>
+        </select>
+      </form>
+    </div>
+    <div class="pdf-embed-container" style="width:100%; border-radius:6px; overflow:hidden; border:1px solid #272b38; background:#13151c;">
+      <embed src="/application/{{ a.id }}/resume.pdf" type="application/pdf" class="pdf-embed-element" style="width:100%; height:900px; border:none; background:#fff; display:block;" />
+    </div>
+    <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span class="muted" style="font-size:11.5px;">A4 Format (1-Page ATS Standard)</span>
+      <a class="btn secondary" href="/application/{{ a.id }}/resume.pdf" target="_blank" style="font-size:12px; padding:5px 12px; text-decoration:none;">Open PDF in new tab ↗</a>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:20px;">
+    {% if ats %}
+    <div class="card">
+      <div style="font-weight:700; font-size:15px; margin-bottom:10px;">ATS breakdown <span class="muted" style="font-weight:400; font-size:12px;">— every point traceable</span></div>
+      <div style="font-size:34px; font-weight:800; margin-bottom:12px; color:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};">
+        {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:16px; color:#94a3b8;">/100</span>
+      </div>
+      <div style="font-size:13px; margin-bottom:6px;"><strong>Parsing safety:</strong> {{ "%.0f"|format(ats.parsing_safety_score) }}/40</div>
+      <div style="font-size:13px; margin-bottom:10px;"><strong>Job relevance:</strong> {{ "%.0f"|format(ats.relevance_score) }}/60</div>
+      {% if ats.matched_skills %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px; color:var(--green);">Matched skills ({{ ats.matched_skills|length }})</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+        {% for sk in ats.matched_skills[:20] %}<span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230;">{{ sk }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      {% if ats.missing_attested_skills %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px; color:var(--yellow);">Missing (attested, not on resume)</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+        {% for sk in ats.missing_attested_skills[:20] %}<span class="badge" style="background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">{{ sk }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      {% if ats.warnings %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px;">Parsing warnings</div>
+      <ul style="font-size:12.5px; color:#94a3b8; margin:0 0 8px; padding-left:18px;">
+        {% for w in ats.warnings[:8] %}<li>{{ w }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% if ats.suggestions %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px;">Suggestions</div>
+      <ul style="font-size:12.5px; color:#94a3b8; margin:0; padding-left:18px;">
+        {% for s in ats.suggestions[:8] %}<li>{{ s }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% if ats.note %}
+      <div class="muted" style="font-size:12px; margin-top:10px;">{{ ats.note }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if gap %}
+    <div class="card">
+      <div style="font-weight:700; font-size:15px; margin-bottom:10px;">Gap report <span class="muted" style="font-weight:400; font-size:12px;">— JD vs your profile</span></div>
+      <div style="font-size:13px; margin-bottom:10px;"><strong>Skill coverage:</strong> {{ "%.0f"|format((gap.coverage or 0) * 100) }}%</div>
+      {% if gap.matched_skills %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px; color:var(--green);">Matched ({{ gap.matched_skills|length }})</div>
+      <div style="font-size:12.5px; color:#94a3b8; margin-bottom:8px;">{{ gap.matched_skills[:12]|join(", ") }}{% if gap.matched_skills|length > 12 %}…{% endif %}</div>
+      {% endif %}
+      {% if gap.missing_skills %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px; color:var(--yellow);">Missing — not invented, de-emphasized ({{ gap.missing_skills|length }})</div>
+      <div style="font-size:12.5px; color:#94a3b8; margin-bottom:8px;">{{ gap.missing_skills[:12]|join(", ") }}{% if gap.missing_skills|length > 12 %}…{% endif %}</div>
+      {% endif %}
+      {% if gap.project_matches %}
+      <div style="font-size:12.5px; font-weight:600; margin:8px 0 4px;">Most relevant projects</div>
+      <ul style="font-size:12.5px; color:#94a3b8; margin:0; padding-left:18px;">
+        {% for p in gap.project_matches[:3] %}<li>{{ p.name }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  @media (max-width: 900px) {
+    .preview-grid { grid-template-columns: 1fr !important; }
+    .pdf-embed-element { height: 65vh !important; min-height: 460px !important; }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,920 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if message %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.showCustomAlert) {
+      const msg = {{ message|tojson }};
+      let alertType = "success";
+      let alertTitle = "Radar Discovery Engine";
+      if (msg.toLowerCase().includes("warning") || msg.includes("0 fresh")) {
+        alertType = "warning";
+        alertTitle = "Radar Scan Notice";
+      } else if (msg.toLowerCase().includes("deleted") || msg.toLowerCase().includes("database")) {
+        alertType = "info";
+        alertTitle = "Database Updated";
+      }
+      window.showCustomAlert(alertTitle, msg, alertType, 7000);
+    }
+  });
+</script>
+{% endif %}
+
+<style>
+  .radar-filter-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  @media (max-width: 950px) {
+    .radar-form-row1 {
+      grid-template-columns: 1fr !important;
+    }
+    .radar-form-row2 {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+  @media (max-width: 650px) {
+    .radar-form-row2 {
+      grid-template-columns: 1fr !important;
+    }
+    .radar-form-row2 button[type=submit] {
+      width: 100% !important;
+    }
+    .radar-header-actions {
+      width: 100% !important;
+      justify-content: stretch !important;
+    }
+    .radar-header-actions form,
+    .radar-header-actions button {
+      width: 100% !important;
+    }
+    .radar-filter-tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
+      max-width: 100%;
+      width: 100%;
+    }
+    .radar-filter-tabs .btn {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #bulkActionBar {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+    }
+    #bulkActionBar form,
+    #bulkActionBar button {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+  }
+</style>
+
+<!-- HEADER BAR -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 style="display:flex; align-items:center; gap:8px;">
+      <svg style="width:22px; height:22px; color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2"></circle>
+        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+      </svg>
+      Radar — Job Discovery
+    </h1>
+    <div class="muted" style="font-size:13px; margin-top:-6px;">
+      Multi-platform aggregator · 100 trusted sources · Real-time anti-expiry &amp; freshness tracking
+    </div>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    {% if cloud_online %}
+      <span class="badge" style="background:#0e2417; color:#10b981; border:1px solid #1f4d32; padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+        Supabase Cloud Online
+      </span>
+    {% else %}
+      <span class="badge" style="background:#281e0f; color:#f59e0b; border:1px solid #4a3818; padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;" title="{{ cloud_msg }}">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f59e0b;"></span>
+        Supabase Paused (Local Active)
+      </span>
+    {% endif %}
+    <form method="post" action="/radar/sync-cloud" class="heavy-action-overlay" data-title="Syncing Supabase Cloud" data-sub="Fetching all job postings from Supabase and updating local database..." style="margin:0;">
+      <button type="submit" class="btn secondary" style="margin:0; padding:6px 13px; font-size:12px; display:inline-flex; align-items:center; gap:6px;" title="Pull all postings from Supabase into local database">
+        <svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+        Sync Supabase Cloud
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- STATS CARDS -->
+<div class="cards">
+  <div class="card">
+    <div class="label">TOTAL DISCOVERED</div>
+    <div class="value">{{ counts.total }}</div>
+  </div>
+  <div class="card">
+    <div class="label">ACTIVE POSTINGS</div>
+    <div class="value" style="color:var(--accent);">{{ counts.active }}</div>
+  </div>
+  <div class="card">
+    <div class="label">WITH APPLY EMAIL</div>
+    <div class="value" style="color:#38bdf8;">{{ counts.email }}</div>
+  </div>
+  <div class="card">
+    <div class="label">PORTAL / LINK ONLY</div>
+    <div class="value" style="color:var(--muted);">{{ counts.portal }}</div>
+  </div>
+</div>
+
+<!-- RADAR ADVANCED SEARCH & DISCOVERY HUB -->
+<div class="card" style="margin-bottom:24px; padding:22px; background:var(--card); border:1px solid var(--line); border-radius:10px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <h3 style="font-size:16px; margin:0;">Job Discovery &amp; Anti-Expiry Engine</h3>
+        <span class="badge" style="background:#0e2417; color:#10b981; border:1px solid #1f4d32; font-size:11px; padding:2px 8px; display:inline-flex; align-items:center; gap:4px;">
+          <svg style="width:11px; height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Anti-Expiry Active
+        </span>
+      </div>
+    </div>
+    <div class="radar-header-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <form method="post" action="/radar/verify-freshness" class="heavy-action-overlay" data-title="Verifying Live URLs" data-sub="Pinging all active job links live to detect closed positions and auto-move them to Expired...">
+        <button type="submit" class="btn secondary" style="margin:0; padding:7px 12px; font-size:12px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px;" title="Pings active job links live to verify they are still open and auto-expires dead links">
+          <svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Verify Links &amp; Auto-Expire
+        </button>
+      </form>
+      <form method="post" action="/radar/expire">
+        <button type="submit" class="btn secondary" style="margin:0; padding:7px 12px; font-size:12px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px;" title="Runs deadline and 48h freshness rules">
+          <svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Run Freshness Expiry
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <form method="post" action="/radar/scan" id="radarScanForm" class="heavy-action-overlay" data-title="Scanning 100+ Platforms &amp; 70+ Company Career Pages" data-sub="Searching real-time postings across Devsinc, Systems Ltd, 10Pearls, Arbisoft, Greenhouse, Lever, and remote tech boards...">
+    <!-- ROW 1: ROLE SELECTION & CUSTOM SEARCH -->
+    <div class="radar-form-row1" style="display:grid; grid-template-columns: 1.4fr 1.6fr; gap:12px; margin-bottom:14px;">
+      <div>
+        <label style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px;">SPECIFIED ROLE (30 Curated Roles)</label>
+        <select name="role" id="roleSelect" style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;">
+          <!-- DEFAULT SELECTION -->
+          <option value="Junior Developer (AI / Full-Stack / ASE)" selected>Junior Developer (AI / Full-Stack / ASE) [Default]</option>
+          
+          <optgroup label="AI &amp; Machine Learning (15 Roles)">
+            <option value="Junior Machine Learning Engineer">Junior Machine Learning Engineer</option>
+            <option value="Associate AI Engineer">Associate AI Engineer</option>
+            <option value="Junior Deep Learning Engineer">Junior Deep Learning Engineer</option>
+            <option value="Junior Computer Vision Engineer">Junior Computer Vision Engineer</option>
+            <option value="Junior NLP / LLM Engineer">Junior NLP / LLM Engineer</option>
+            <option value="Generative AI &amp; Agentic Workflow Developer">Generative AI &amp; Agentic Workflow Developer</option>
+            <option value="Junior MLOps Engineer">Junior MLOps Engineer</option>
+            <option value="Associate Data Scientist">Associate Data Scientist</option>
+            <option value="Junior AI Research Engineer">Junior AI Research Engineer</option>
+            <option value="Junior PyTorch / Python AI Developer">Junior PyTorch / Python AI Developer</option>
+            <option value="AI Prompt &amp; Systems Engineer">AI Prompt &amp; Systems Engineer</option>
+            <option value="Junior Data / ML Pipeline Engineer">Junior Data / ML Pipeline Engineer</option>
+            <option value="Applied AI Developer (Entry-Level)">Applied AI Developer (Entry-Level)</option>
+            <option value="Junior AI Automation Engineer">Junior AI Automation Engineer</option>
+          </optgroup>
+
+          <optgroup label="Full-Stack &amp; Web Engineering (10 Roles)">
+            <option value="Junior Full-Stack Developer">Junior Full-Stack Developer</option>
+            <option value="Full-Stack Python / React Developer">Full-Stack Python / React Developer</option>
+            <option value="Full-Stack TypeScript / Next.js Developer">Full-Stack TypeScript / Next.js Developer</option>
+            <option value="Junior MERN / PERN Stack Developer">Junior MERN / PERN Stack Developer</option>
+            <option value="Associate Frontend Developer (React / Next.js)">Associate Frontend Developer (React / Next.js)</option>
+            <option value="Junior Backend Developer (Python / FastAPI / Django)">Junior Backend Developer (Python / FastAPI / Django)</option>
+            <option value="Junior Backend Developer (Node.js / Express)">Junior Backend Developer (Node.js / Express)</option>
+            <option value="Junior Backend Developer (Go / Golang)">Junior Backend Developer (Go / Golang)</option>
+            <option value="Junior Web Application Developer">Junior Web Application Developer</option>
+            <option value="Junior REST / GraphQL API Developer">Junior REST / GraphQL API Developer</option>
+          </optgroup>
+
+          <optgroup label="Core Software &amp; Cloud (5 Roles)">
+            <option value="Associate Software Engineer (ASE 0-2 YOE)">Associate Software Engineer (ASE 0-2 YOE)</option>
+            <option value="Junior Cloud &amp; DevOps Engineer">Junior Cloud &amp; DevOps Engineer</option>
+            <option value="Junior Data Engineer (SQL / Python / ETL)">Junior Data Engineer (SQL / Python / ETL)</option>
+            <option value="Junior QA / Automation Test Engineer">Junior QA / Automation Test Engineer</option>
+            <option value="Junior System Software Developer">Junior System Software Developer</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px;">CUSTOM SEARCH QUERY (Optional Override)</label>
+        <input type="text" name="custom_role" id="customRoleInput" placeholder="Leave empty to use role above, or type custom role query..." style="width:100%; margin:0; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;">
+      </div>
+    </div>
+
+    <!-- ROW 2: LOCATION, REMOTE & PLATFORM SELECTION -->
+    <div class="radar-form-row2" style="display:grid; grid-template-columns: 1.3fr 1.3fr 1fr auto; gap:12px; margin-bottom:14px; align-items:end;">
+      <!-- LOCATION CONTROLS -->
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+          <label style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase;">TARGET LOCATION</label>
+          <button type="button" onclick="detectUserLocation()" style="background:transparent; border:none; color:var(--accent); font-size:11px; cursor:pointer; padding:0; text-decoration:underline;">Auto-Detect</button>
+        </div>
+        <select name="location" id="locationSelect" style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;">
+          <!-- DEFAULT LOCATION REQUIREMENT -->
+          <option value="worldwide_remote_or_pakistan_onsite" selected>Worldwide (Remote) &amp; Onsite (Lahore, Islamabad, Faisalabad) [Default]</option>
+          <option value="pakistan_lahore">Lahore, Pakistan (Onsite &amp; Remote)</option>
+          <option value="pakistan_islamabad">Islamabad, Pakistan (Onsite &amp; Remote)</option>
+          <option value="pakistan_faisalabad">Faisalabad, Pakistan (Onsite &amp; Remote)</option>
+          <option value="pakistan_all">All Pakistan (Onsite &amp; Remote)</option>
+          <option value="worldwide_remote">Worldwide Remote Only</option>
+          <option value="United States">United States (Remote &amp; On-site)</option>
+          <option value="Canada">Canada (Remote &amp; On-site)</option>
+          <option value="United Kingdom">United Kingdom (Remote &amp; On-site)</option>
+          <option value="Europe">Europe (Remote &amp; On-site)</option>
+          <option value="custom">Custom City / Region...</option>
+        </select>
+        <input type="text" name="custom_location" id="customLocationInput" placeholder="Enter custom city or country..." style="display:none; width:100%; margin-top:6px; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
+      </div>
+
+      <!-- 100 PLATFORMS SELECTOR -->
+      <div>
+        <label style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px;">TRUSTED PLATFORMS (100 Available)</label>
+        <select name="platform" id="platformSelect" style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;">
+          <option value="all" selected>All Platforms / Open Internet (100+ Sources) [Default]</option>
+          <option value="pakistan_companies">70+ Top Tech Companies in Pakistan (Devsinc, Systems Ltd, Arbisoft...)</option>
+          
+          <optgroup label="Direct ATS Portals (0 Spam, Highest Conversion)">
+            <option value="greenhouse">Greenhouse (boards.greenhouse.io)</option>
+            <option value="lever">Lever (jobs.lever.co)</option>
+            <option value="workday">Workday (myworkdayjobs.com)</option>
+            <option value="ashby">Ashby (jobs.ashbyhq.com)</option>
+            <option value="smartrecruiters">SmartRecruiters</option>
+            <option value="workable">Workable</option>
+            <option value="bamboohr">BambooHR</option>
+            <option value="breezyhr">Breezy HR</option>
+            <option value="recruitee">Recruitee</option>
+            <option value="jazzhr">JazzHR</option>
+            <option value="rippling">Rippling ATS</option>
+            <option value="jobvite">Jobvite</option>
+            <option value="taleo">Oracle Taleo</option>
+            <option value="pinpoint">Pinpoint</option>
+            <option value="comeet">Comeet</option>
+          </optgroup>
+
+          <optgroup label="Tier 1 Major Networks &amp; Aggregators">
+            <option value="linkedin">LinkedIn Jobs</option>
+            <option value="indeed">Indeed</option>
+            <option value="google_jobs">Google Jobs Engine</option>
+            <option value="dice">Dice Tech Jobs</option>
+            <option value="glassdoor">Glassdoor</option>
+            <option value="ziprecruiter">ZipRecruiter</option>
+            <option value="monster">Monster</option>
+            <option value="careerbuilder">CareerBuilder</option>
+            <option value="simplyhired">SimplyHired</option>
+            <option value="jooble">Jooble</option>
+            <option value="talent_com">Talent.com</option>
+            <option value="lensa">Lensa</option>
+          </optgroup>
+
+          <optgroup label="Startup &amp; Venture Ecosystems">
+            <option value="wellfound">Wellfound (AngelList)</option>
+            <option value="ycombinator">Y Combinator (Work at a Startup)</option>
+            <option value="builtin">Built In Tech</option>
+            <option value="techstars">Techstars Careers</option>
+            <option value="otta">Otta (Welcome to the Jungle)</option>
+            <option value="levels_fyi">Levels.fyi Jobs</option>
+            <option value="hackernews">Hacker News (Who is Hiring)</option>
+            <option value="startupjobs">Startup Jobs</option>
+            <option value="underdog">Underdog.io</option>
+            <option value="crunchbase">Crunchbase Careers</option>
+            <option value="untapped">Untapped</option>
+          </optgroup>
+
+          <optgroup label="Dedicated Remote Tech Boards">
+            <option value="remoteok">RemoteOK</option>
+            <option value="weworkremotely">We Work Remotely</option>
+            <option value="remotive">Remotive (API)</option>
+            <option value="jobicy">Jobicy (API)</option>
+            <option value="arbeitnow">Arbeitnow (API)</option>
+            <option value="workingnomads">Working Nomads</option>
+            <option value="remoterocketship">Remote Rocketship</option>
+            <option value="flexjobs">FlexJobs</option>
+            <option value="dailyremote">DailyRemote</option>
+            <option value="justremote">JustRemote</option>
+            <option value="remote_co">Remote.co</option>
+            <option value="himalayas">Himalayas</option>
+            <option value="nodesk">NoDesk</option>
+            <option value="dynamitejobs">Dynamite Jobs</option>
+          </optgroup>
+
+          <optgroup label="Developer &amp; AI Specialist">
+            <option value="aijobs_net">AI Jobs Net</option>
+            <option value="devitjobs">DevITjobs</option>
+            <option value="python_org">Python.org Official Jobs</option>
+            <option value="pycoder_jobs">PyCoder Jobs</option>
+            <option value="relocateme">Relocate.me</option>
+            <option value="honeypot">Honeypot.io</option>
+            <option value="arc_dev">Arc.dev</option>
+            <option value="turing">Turing</option>
+            <option value="toptal">Toptal Tech</option>
+            <option value="kaggle_jobs">Kaggle Community Jobs</option>
+            <option value="github_jobs">GitHub Jobs</option>
+            <option value="stackoverflow_network">Stack Overflow Network</option>
+          </optgroup>
+
+          <optgroup label="Pakistan Tech Hubs &amp; Regional">
+            <option value="rozee_pk">Rozee.pk (Pakistan Tech)</option>
+            <option value="mustakbil">Mustakbil.com (Pakistan)</option>
+            <option value="bayt">Bayt (Middle East &amp; Pak)</option>
+            <option value="gulftalent">GulfTalent</option>
+            <option value="reed_uk">Reed.co.uk (UK)</option>
+            <option value="cwjobs">CWJobs Tech</option>
+            <option value="stepstone_de">StepStone Germany</option>
+            <option value="seek_au">Seek Australia</option>
+            <option value="naukri">Naukri Tech</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- EXPERIENCE & BATCH LIMIT -->
+      <div>
+        <label style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px;">EXPERIENCE &amp; LIMIT</label>
+        <div style="display:flex; gap:6px;">
+          <select name="experience" style="width:65%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 8px; font-size:12px;">
+            <option value="junior" selected>Junior (0–2 yrs)</option>
+            <option value="mid">Mid (2–4 yrs)</option>
+            <option value="any">Any Level</option>
+          </select>
+          <select name="limit" style="width:35%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 8px; font-size:12px;">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TRIGGER BUTTON -->
+      <div>
+        <button type="submit" class="btn primary" style="margin:0; padding:10px 18px; font-size:13px; font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:6px;">
+          <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Trigger Live Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- ROW 3: PERMANENT REMOTE CHECKBOX & RELEVANCE NOTICE -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:10px; border-top:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" name="include_remote" value="true" checked id="includeRemoteCheck" style="width:15px; height:15px; accent-color:var(--accent); cursor:pointer;">
+        <label for="includeRemoteCheck" style="font-size:12px; color:var(--text); cursor:pointer; font-weight:500;">
+          Include Remote Opportunities (Worldwide &amp; Regional)
+        </label>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- FILTER TABS & HEADER -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin:24px 0 12px; flex-wrap:wrap; gap:10px;">
+  <div>
+    <h3 style="margin:0; font-size:16px;">
+      {% if status_filter == 'active' %}
+        Active Postings
+      {% elif status_filter == 'expired' %}
+        Expired Archive
+      {% elif status_filter == 'applied' %}
+        Applied Postings
+      {% elif status_filter == 'saved' %}
+        Saved Postings
+      {% else %}
+        All Discovered Postings
+      {% endif %}
+    </h3>
+  </div>
+  <div class="radar-filter-tabs">
+    <a href="/radar?status=active" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; {% if status_filter == 'active' %}background:var(--accent); color:#0e1015; font-weight:600; border-color:var(--accent);{% endif %}">Active ({{ counts.active }})</a>
+    <a href="/radar?status=expired" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; {% if status_filter == 'expired' %}background:#374151; color:#f3f4f6; font-weight:600; border-color:#4b5563;{% endif %}">Expired ({{ counts.expired }})</a>
+    <a href="/radar?status=applied" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; {% if status_filter == 'applied' %}background:var(--accent); color:#0e1015; font-weight:600; border-color:var(--accent);{% endif %}">Applied ({{ counts.applied or 0 }})</a>
+    <a href="/radar?status=saved" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; {% if status_filter == 'saved' %}background:#a855f7; color:#fff; font-weight:600; border-color:#a855f7;{% endif %}">Saved ({{ counts.saved or 0 }})</a>
+    <a href="/radar?status=all" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; {% if status_filter == 'all' %}background:var(--accent); color:#0e1015; font-weight:600; border-color:var(--accent);{% endif %}">All Postings ({{ counts.total }})</a>
+  </div>
+</div>
+
+{% if jobs %}
+  <!-- BULK ACTIONS FLOATING TOOLBAR -->
+  <div id="bulkActionBar" style="display:none; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--accent); border-radius:8px; padding:10px 18px; margin-bottom:14px; box-shadow:0 6px 20px rgba(0,0,0,0.5);">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-weight:600; color:var(--accent); font-size:13px;">Selected <span id="selectedCountText">0</span> job(s)</span>
+      <button type="button" onclick="toggleSelectAllJobs(false)" style="background:transparent; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline;">Deselect All</button>
+    </div>
+    <form id="bulkDeleteForm" method="post" action="/radar/jobs/bulk-delete" onsubmit="return confirmBulkDelete(event);" style="margin:0;">
+      <div id="bulkDeleteInputs"></div>
+      <button type="submit" class="btn danger" style="margin:0; padding:6px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+        <svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Delete Selected (<span id="selectedBtnCount">0</span>)
+      </button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+  <table style="min-width: 880px;">
+    <thead>
+      <tr>
+        <th style="width:36px; text-align:center;">
+          <input type="checkbox" id="selectAllJobs" onchange="toggleSelectAllJobs(this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:var(--accent);" title="Select / Deselect All">
+        </th>
+        <th style="width:24%;">Job Title &amp; Company</th>
+        <th style="width:16%;">Location &amp; Source</th>
+        <th style="width:18%;">Status &amp; Controls</th>
+        <th style="width:16%;">Application Mode</th>
+        <th style="width:23%; text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for j in jobs %}
+        <tr id="radar-row-{{ j.id }}" data-job-id="{{ j.id }}">
+          <td style="text-align:center;">
+            <input type="checkbox" name="job_ids" value="{{ j.id }}" class="job-select-checkbox" onchange="updateBulkActionBar()" style="cursor:pointer; width:15px; height:15px; accent-color:var(--accent);">
+          </td>
+          <td>
+            <strong>{{ j.title }}</strong>
+            <div class="muted" style="font-size:12px; margin-top:2px;">{{ j.company or "Company Confidential" }}</div>
+          </td>
+          <td>
+            <div>{{ j.location or "Remote" }}</div>
+            <span class="badge" style="margin-top:4px; font-size:11px;">{{ j.source }}</span>
+          </td>
+          <td>
+            <!-- STATUS BADGE -->
+            <div class="job-status-badge-container" id="status-badge-{{ j.id }}" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+              {% if j.status == 'active' %}
+                <span class="badge" style="background:#0e2417; color:#10b981; border:1px solid #1f4d32; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                  <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+                  Active
+                </span>
+              {% elif j.status == 'expired' %}
+                <span class="badge" style="background:#1e222b; color:#94a3b8; border:1px solid #2e3543; display:inline-flex; align-items:center; gap:5px;">
+                  <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#94a3b8;"></span>
+                  Expired
+                </span>
+              {% elif j.status == 'applied' %}
+                <span class="badge" style="background:#0e1e2d; color:#38bdf8; border:1px solid #1d3e5a; display:inline-flex; align-items:center; gap:5px;">
+                  <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8;"></span>
+                  Applied
+                </span>
+              {% elif j.status == 'saved' %}
+                <span class="badge" style="background:#22132d; color:#c084fc; border:1px solid #482361; display:inline-flex; align-items:center; gap:5px;">
+                  <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#c084fc;"></span>
+                  Saved
+                </span>
+              {% else %}
+                <span class="badge" style="background:#2d1316; color:#f87171; border:1px solid #5a2027;">{{ j.status|capitalize }}</span>
+              {% endif %}
+            </div>
+
+            <!-- STATUS SELECTOR DROPDOWN -->
+            <div style="margin:0 0 6px 0;">
+              <select name="new_status" data-current-status="{{ j.status }}" onchange="updateJobStatusAsync('{{ j.id }}', this.value, this)" style="width:100%; max-width:145px; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer;" title="Change job status in SQLite &amp; Supabase">
+                <option value="active" {% if j.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="expired" {% if j.status == 'expired' %}selected{% endif %}>Expired / Closed</option>
+                <option value="applied" {% if j.status == 'applied' %}selected{% endif %}>Applied</option>
+                <option value="saved" {% if j.status == 'saved' %}selected{% endif %}>Saved</option>
+                <option value="rejected" {% if j.status == 'rejected' %}selected{% endif %}>Not Interested</option>
+              </select>
+            </div>
+
+            <!-- QUICK 1-CLICK ACTION BUTTONS -->
+            <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+              {% if j.status == 'active' %}
+                <button type="button" onclick="updateJobStatusAsync('{{ j.id }}', 'expired', this)" style="background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;" title="Mark position as closed/expired">Expire</button>
+                <button type="button" onclick="updateJobStatusAsync('{{ j.id }}', 'applied', this)" style="background:transparent; border:1px solid var(--line); color:#38bdf8; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;" title="Mark as already applied">Applied</button>
+              {% elif j.status == 'expired' %}
+                <button type="button" onclick="updateJobStatusAsync('{{ j.id }}', 'active', this)" style="background:transparent; border:1px solid #1f4d32; color:#10b981; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;" title="Reactivate this job posting">Reactivate</button>
+              {% else %}
+                <button type="button" onclick="updateJobStatusAsync('{{ j.id }}', 'active', this)" style="background:transparent; border:1px solid #1f4d32; color:#10b981; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;">Set Active</button>
+              {% endif %}
+            </div>
+
+            {% if j.deadline %}
+              <div class="muted" style="font-size:11px; margin-top:4px;">
+                Deadline: {{ j.deadline.strftime('%b %d, %Y') }}
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if j.has_email %}
+              <span class="badge" style="background:#0e1e2d; color:#38bdf8; border:1px solid #1d3e5a; display:inline-flex; align-items:center; gap:5px;">
+                <svg style="width:11px; height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                Direct Email
+              </span>
+              <div class="muted" style="font-size:11px; margin-top:3px; word-break:break-all;">{{ j.email }}</div>
+            {% else %}
+              <span class="badge" style="background:#22132d; color:#c084fc; border:1px solid #482361; display:inline-flex; align-items:center; gap:5px;">
+                <svg style="width:11px; height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                Portal Link
+              </span>
+              <div class="muted" style="font-size:11px; margin-top:3px;">Manual web application</div>
+            {% endif %}
+          </td>
+          <td style="text-align:right;">
+            <div style="display:flex; justify-content:flex-end; gap:6px; align-items:center; flex-wrap:wrap;">
+              <!-- Promote to Career Pulse Queue -->
+              <form method="post" action="/radar/job/{{ j.id }}/queue" style="display:inline;">
+                <button type="submit" class="btn primary" style="margin:0; padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" title="Tailor resume and draft email in Career Pulse">
+                  <svg style="width:12px; height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Tailor &amp; Apply
+                </button>
+              </form>
+              <!-- Open External Link -->
+              {% if j.link %}
+                <a class="btn secondary" href="{{ j.link }}" target="_blank" style="margin:0; padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" title="Open original job posting">
+                  Link
+                  <svg style="width:11px; height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </a>
+              {% endif %}
+              <!-- Delete Job (Instant AJAX) -->
+              <button type="button" class="btn secondary" style="margin:0; padding:6px 10px; font-size:12px; border-color:#4a1e23; color:#f87171;" title="Permanently delete job" data-title="{{ j.title }} at {{ j.company }}" onclick="deleteSingleJobAsync(event, '{{ j.id }}', this.getAttribute('data-title'))">Delete</button>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% else %}
+  <div class="card" style="padding:36px; text-align:center; color:var(--muted);">
+    <div style="margin-bottom:12px; display:flex; justify-content:center;">
+      <svg style="width:36px; height:36px; color:var(--muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="2"></circle>
+        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+      </svg>
+    </div>
+    <p style="font-size:15px; color:var(--text); font-weight:600;">No postings found in this view.</p>
+    <p style="font-size:13px; margin-top:6px; max-width:540px; margin-left:auto; margin-right:auto;">
+      {% if status_filter == 'active' %}
+        Radar strictly shows verified tech jobs posted within the last 3 days (&le; 72h) and discovered within the last 48h. Older jobs automatically move to the <strong>Expired Archive</strong> tab.
+      {% else %}
+        No jobs currently match the <strong>{{ status_filter }}</strong> filter.
+      {% endif %}
+    </p>
+    <div style="margin-top:16px;">
+      <a href="/radar?status=all" class="btn secondary" style="font-size:12px; padding:7px 14px;">View All Postings Archive</a>
+    </div>
+  </div>
+{% endif %}
+
+<!-- PROGRESS BAR & CUSTOM TOAST SCRIPT -->
+<script>
+  // Radar progress and action dispatcher
+  function showRadarProgress(title, subtitle) {
+    const steps = [
+      "[1/4] Formulating targeted query for Junior AI / Full-Stack ASE...",
+      "[2/4] Querying trusted platforms (Greenhouse, Lever, LinkedIn, Workday)...",
+      "[3/4] Live URL Anti-Expiry Ping & Content Closure Check...",
+      "[4/4] Ingesting verified active postings into database..."
+    ];
+    if (window.showActionOverlay) {
+      window.showActionOverlay(title, subtitle, steps);
+    }
+  }
+
+  // Attach custom multistep progress to heavy scan forms
+  document.querySelectorAll('form.heavy-action-overlay').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      if (e.defaultPrevented) return;
+      const title = this.getAttribute('data-title') || "Scanning Tech Ecosystems";
+      const sub = this.getAttribute('data-sub') || "Searching real-time postings across 70+ tech companies & trusted platforms...";
+      showRadarProgress(title, sub);
+    });
+  });
+
+  // Location selector change handler (toggle custom input)
+  const locSelect = document.getElementById('locationSelect');
+  const customLocInput = document.getElementById('customLocationInput');
+  if (locSelect && customLocInput) {
+    locSelect.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customLocInput.style.display = 'block';
+        customLocInput.focus();
+      } else {
+        customLocInput.style.display = 'none';
+      }
+    });
+  }
+
+  // Auto-Detect Location Function with Browser Permission Prompt
+  async function detectUserLocation() {
+    if (!navigator.geolocation) {
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Geolocation Unavailable", "Browser does not support geolocation. Defaulting to Worldwide Remote + Pakistan tech hubs.", "warning");
+      }
+      fallbackIpDetect("Geolocation API unsupported");
+      return;
+    }
+
+    if (window.showCustomAlert) {
+      window.showCustomAlert("Location Permission", "Please allow browser location permission in the prompt above...", "info", 3500);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const res = await fetch(`/api/location/resolve?lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+          if (data && (data.city || data.country)) {
+            const cityName = (data.city || "").toLowerCase();
+            const countryName = (data.country || "").toLowerCase();
+            if (cityName.includes("lahore")) {
+              locSelect.value = "pakistan_lahore";
+            } else if (cityName.includes("islamabad") || cityName.includes("rawalpindi")) {
+              locSelect.value = "pakistan_islamabad";
+            } else if (cityName.includes("faisalabad")) {
+              locSelect.value = "pakistan_faisalabad";
+            } else if (countryName.includes("pakistan")) {
+              locSelect.value = "pakistan_all";
+            } else {
+              locSelect.value = "custom";
+              customLocInput.style.display = "block";
+              customLocInput.value = `${data.city || ''}, ${data.country || ''}`.trim().replace(/^,|,$/g, '');
+            }
+            if (window.showCustomAlert) {
+              window.showCustomAlert("Location Verified", `Detected: ${data.display || data.city}. Remote opportunities remain active.`, "success", 5000);
+            }
+          } else {
+            fallbackIpDetect("Resolution returned no city");
+          }
+        } catch (err) {
+          console.warn("Location resolve error:", err);
+          fallbackIpDetect("Network error");
+        }
+      },
+      (err) => {
+        console.warn("Geolocation permission error/denied:", err);
+        fallbackIpDetect(err.message);
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+
+  async function fallbackIpDetect(reason) {
+    try {
+      const res = await fetch('/api/location/detect');
+      const data = await res.json();
+      if (data && data.city) {
+        locSelect.value = "pakistan_lahore";
+        if (window.showCustomAlert) {
+          window.showCustomAlert("Location Active", `Set region to ${data.display}. Remote opportunities remain active.`, "info", 4500);
+        }
+      }
+    } catch (e) {
+      console.warn("IP detect error:", e);
+    }
+  }
+
+  // Instant Asynchronous Status Update with Optimistic UI & Rollback
+  async function updateJobStatusAsync(jobId, newStatus, triggerEl) {
+    const row = document.getElementById(`radar-row-${jobId}`);
+    const badgeContainer = document.getElementById(`status-badge-${jobId}`);
+    const selectEl = row ? row.querySelector('select[name="new_status"]') : null;
+    const previousStatus = selectEl ? (selectEl.getAttribute('data-current-status') || selectEl.value) : 'active';
+
+    function renderBadgeHtml(status) {
+      if (status === 'active') {
+        return `<span class="badge" style="background:#0e2417; color:#10b981; border:1px solid #1f4d32; font-weight:600; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>Active</span>`;
+      } else if (status === 'expired') {
+        return `<span class="badge" style="background:#1e222b; color:#94a3b8; border:1px solid #2e3543; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#94a3b8;"></span>Expired</span>`;
+      } else if (status === 'applied') {
+        return `<span class="badge" style="background:#0e1e2d; color:#38bdf8; border:1px solid #1d3e5a; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8;"></span>Applied</span>`;
+      } else if (status === 'saved') {
+        return `<span class="badge" style="background:#22132d; color:#c084fc; border:1px solid #482361; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#c084fc;"></span>Saved</span>`;
+      } else {
+        return `<span class="badge" style="background:#2d1316; color:#f87171; border:1px solid #5a2027;">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+      }
+    }
+
+    // Optimistic UI update
+    if (badgeContainer) badgeContainer.innerHTML = renderBadgeHtml(newStatus);
+    if (selectEl) selectEl.value = newStatus;
+
+    try {
+      const res = await fetch(`/radar/job/${jobId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ new_status: newStatus })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (selectEl) selectEl.setAttribute('data-current-status', newStatus);
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Status Updated", `Job status updated to ${newStatus.toUpperCase()}`, "success", 2000);
+      }
+    } catch (err) {
+      console.error("Status update error:", err);
+      // Revert optimistic change
+      if (badgeContainer) badgeContainer.innerHTML = renderBadgeHtml(previousStatus);
+      if (selectEl) selectEl.value = previousStatus;
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Update Failed", "Could not save status change. Please check your network.", "error");
+      }
+    }
+  }
+
+  // Instant Single Delete with Smooth Animation
+  function deleteSingleJobAsync(event, jobId, jobTitle) {
+    if (event) event.preventDefault();
+    window.openConfirmModal({
+      title: "Delete Job Posting",
+      body: `Are you sure you want to permanently delete <strong>${jobTitle || 'this posting'}</strong>?`,
+      confirmText: "Delete",
+      confirmBg: "#dc2626",
+      confirmColor: "#ffffff",
+      onConfirm: async () => {
+        const row = document.getElementById(`radar-row-${jobId}`);
+        if (row) {
+          row.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+          row.style.opacity = "0.3";
+        }
+        try {
+          const res = await fetch(`/radar/job/${jobId}/delete`, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            }
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (row) {
+            row.style.opacity = "0";
+            row.style.transform = "translateX(20px)";
+            setTimeout(() => {
+              row.remove();
+              updateBulkActionBar();
+            }, 250);
+          }
+          if (window.showCustomAlert) {
+            window.showCustomAlert("Job Deleted", "Posting removed successfully.", "success", 2500);
+          }
+        } catch (err) {
+          if (row) row.style.opacity = "1";
+          if (window.showCustomAlert) {
+            window.showCustomAlert("Delete Failed", "Could not delete job posting.", "error");
+          }
+        }
+      }
+    });
+  }
+
+  // Multi-Select and Bulk Delete handling
+  function updateBulkActionBar() {
+    const checkedBoxes = document.querySelectorAll('.job-select-checkbox:checked');
+    const allBoxes = document.querySelectorAll('.job-select-checkbox');
+    const count = checkedBoxes.length;
+    const bar = document.getElementById('bulkActionBar');
+    const countText = document.getElementById('selectedCountText');
+    const btnCount = document.getElementById('selectedBtnCount');
+    const selectAllBox = document.getElementById('selectAllJobs');
+
+    if (countText) countText.textContent = count;
+    if (btnCount) btnCount.textContent = count;
+
+    if (bar) {
+      bar.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    if (selectAllBox && allBoxes.length > 0) {
+      selectAllBox.checked = (count === allBoxes.length);
+      selectAllBox.indeterminate = (count > 0 && count < allBoxes.length);
+    }
+
+    // Highlight selected rows
+    allBoxes.forEach(cb => {
+      const row = cb.closest('tr');
+      if (row) {
+        if (cb.checked) {
+          row.style.background = 'rgba(16, 185, 129, 0.08)';
+        } else {
+          row.style.background = '';
+        }
+      }
+    });
+  }
+
+  function toggleSelectAllJobs(checked) {
+    const allBoxes = document.querySelectorAll('.job-select-checkbox');
+    allBoxes.forEach(cb => {
+      cb.checked = checked;
+    });
+    updateBulkActionBar();
+  }
+
+  function confirmBulkDelete(e) {
+    if (e) e.preventDefault();
+    const checked = document.querySelectorAll('.job-select-checkbox:checked');
+    if (checked.length === 0) {
+      if (window.showCustomAlert) {
+        window.showCustomAlert("No Jobs Selected", "Please select at least one job checkbox to delete.", "info");
+      }
+      return false;
+    }
+
+    const jobIds = Array.from(checked).map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+
+    window.openConfirmModal({
+      title: "Confirm Bulk Deletion",
+      body: `
+        <div style="font-size:14px; margin-bottom:10px; color:#f1f5f9;">
+          Are you sure you want to permanently delete <strong>${jobIds.length} selected job posting(s)</strong>?
+        </div>
+        <div style="background:#2d1316; border:1px solid #5a2027; color:#fca5a5; padding:10px 14px; border-radius:6px; font-size:12px; line-height:1.4;">
+          <strong>Warning:</strong> Selected jobs will be deleted from both SQLite and Supabase Cloud. This action cannot be undone.
+        </div>
+      `,
+      confirmText: `Delete ${jobIds.length} Postings`,
+      confirmBg: "#dc2626",
+      confirmColor: "#ffffff",
+      onConfirm: async () => {
+        jobIds.forEach(id => {
+          const row = document.getElementById(`radar-row-${id}`);
+          if (row) {
+            row.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+            row.style.opacity = "0.3";
+          }
+        });
+
+        try {
+          const res = await fetch('/radar/jobs/bulk-delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ job_ids: jobIds })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          jobIds.forEach(id => {
+            const row = document.getElementById(`radar-row-${id}`);
+            if (row) {
+              row.style.opacity = "0";
+              row.style.transform = "translateX(20px)";
+              setTimeout(() => row.remove(), 250);
+            }
+          });
+          setTimeout(() => updateBulkActionBar(), 300);
+          if (window.showCustomAlert) {
+            window.showCustomAlert("Bulk Deletion Complete", `Successfully removed ${jobIds.length} job postings.`, "success", 3000);
+          }
+        } catch (err) {
+          jobIds.forEach(id => {
+            const row = document.getElementById(`radar-row-${id}`);
+            if (row) row.style.opacity = "1";
+          });
+          if (window.showCustomAlert) {
+            window.showCustomAlert("Bulk Delete Failed", "Could not delete postings. Please try again.", "error");
+          }
+        }
+      }
+    });
+    return false;
+  }
+</script>
+
+{% endblock %}

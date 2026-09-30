@@ -1,0 +1,106 @@
+# ============================================================================
+# PROJECT LIBRARY — Haseeb Ur Rahman (Updated from Haseeb.pdf)
+# ============================================================================
+# This is your authoritative project library. Matches your active Haseeb.pdf.
+# ============================================================================
+
+
+projects:
+  - id: nemetron
+    subtitle: "Agentic AI Knowledge & Retrieval System"
+    name: "Nemetron"
+    short_name: "Nemetron"
+    priority: 1
+    domains: ["ai_ml", "full_stack"]
+    tags: ["agentic-ai", "rag", "vector-search", "llm", "embeddings"]
+    skills: ["python", "rag", "llms", "vector search", "agentic ai"]
+    bullet: "Built an Agentic AI system that combines LLMs with RAG and vector search to retrieve relevant information and provide context aware responses. Developed using Python, integrating AI agents, document processing, embeddings, and retrieval workflows."
+    link: "https://nemetron.vercel.app/"
+
+  - id: signal_reach
+    subtitle: "Agentic AI Lead Generation Platform"
+    name: "Signal Reach"
+    short_name: "Signal Reach"
+    priority: 2
+    domains: ["ai_ml", "full_stack"]
+    tags: ["agentic-ai", "lead-generation", "fastapi", "automation"]
+    skills: ["python", "fastapi", "agentic ai", "automation"]
+    bullet: "Developed an Agentic AI lead generation platform that automates prospect research, data collection, and lead qualification using Python, AI agents, and FastAPI."
+    link: "https://github.com/mirza1272/Signal-Reach"
+
+  - id: safe_web_access
+    subtitle: "Secure Web Fetching & AI Data Ingestion Package"
+    name: "Safe Web Access"
+    short_name: "Safe Web Access"
+    priority: 3
+    domains: ["ai_ml", "full_stack"]
+    tags: ["python-package", "security", "ssrf", "http-clients", "rag-ingestion"]
+    skills: ["python", "security", "http clients", "ssrf protection"]
+    bullet: "Developed and published a Python package for secure web access in AI agents and RAG pipelines, implementing SSRF protection, URL validation, safe redirects, domain/IP policies, response limits, crawl budgets, and async/sync HTTP clients."
+    link: "https://pypi.org/project/safe-web-access/"
+
+  - id: civicheat_autopilot
+    subtitle: "Agentic AI Urban Heat Response & Planning System"
+    name: "CivicHeat Autopilot"
+    short_name: "CivicHeat Autopilot"
+    priority: 4
+    domains: ["ai_ml", "full_stack"]
+    tags: ["agentic-ai", "groq", "llm", "urban-planning", "optimization"]
+    skills: ["python", "groq", "llms", "optimization", "apis"]
+    bullet: "Developed an Agentic AI urban heat planning system that processes street-level temperature, forecast, and exposure data to rank high-risk areas and generate actionable response plans using FortyGuard Temperature API and Groq."
+    link: "https://civic-heat-auto-pilot.vercel.app/"
+
+  - id: nexus_ai
+    subtitle: "Voice-Enabled RAG Knowledge Assistant"
+    name: "Nexus AI"
+    short_name: "Nexus AI"
+    priority: 5
+    domains: ["ai_ml", "full_stack"]
+    tags: ["rag", "vapi", "voice-ai", "fastapi", "chromadb", "groq"]
+    skills: ["fastapi", "vapi", "chromadb", "groq", "rag", "voice ai"]
+    bullet: "Built a custom RAG-based knowledge assistant combining Vapi voice interaction with FastAPI backend, FastEmbed embeddings, ChromaDB vector retrieval, and Groq LLM streaming responses."
+    link: "https://github.com/mirza1272/VAPI-Assistant"
+
+  - id: xray_chest_classification
+    subtitle: "Deep Learning Model for Pneumonia Detection"
+    name: "X-ray Chest Classification"
+    short_name: "X-ray Chest Classification"
+    priority: 6
+    domains: ["ai_ml"]
+    tags: ["deep-learning", "computer-vision", "cnn", "healthcare", "image-classification"]
+    skills: ["python", "cnn", "deep learning", "tensorflow", "keras"]
+    bullet: "Developed a CNN-based image classification model for detecting chest conditions from X-ray images with data preprocessing, training, and performance evaluation."
+    link: "https://github.com/mirza1272/X-ray-Chest-Classification-using-Deep-Learning-CNN-Pneumonia-Detection"
+
+  - id: hrconnect
+    subtitle: "ATS System"
+    name: "HRConnect"
+    short_name: "HRConnect"
+    priority: 7
+    domains: ["full_stack"]
+    tags: ["mern", "recruitment", "ats", "react", "mongodb"]
+    skills: ["react.js", "html", "css", "javascript", "node.js", "express.js", "mongodb"]
+    bullet: "Built a MERN-based recruitment system for managing job postings, applications, and hiring workflows across multiple branches. Developed responsive frontend interfaces using React, HTML, CSS, and Tailwind CSS for user dashboards and admin panels."
+    link: "https://hrconnect-ats.vercel.app/"
+
+  - id: recommendation_system
+    subtitle: "Hybrid Movie Recommendation"
+    name: "Recommendation System"
+    short_name: "Recommendation System"
+    priority: 8
+    domains: ["ai_ml"]
+    tags: ["machine-learning", "recommendation-system", "search", "clustering", "ann"]
+    skills: ["python", "machine learning", "pytorch", "tensorflow", "openai", "fastapi"]
+    bullet: "Engineered a hybrid AI Movie Recommendation System that combines classical AI techniques including BFS, DFS, A*, CSP, and heuristics with machine learning techniques such as K-Means clustering and ANN."
+    link: "https://github.com/mirza1272/Movie-Recommendation-System"
+
+  - id: income_classification
+    subtitle: "Prediction using Demographic Data"
+    name: "Income Classification Model"
+    short_name: "Income Classification"
+    priority: 9
+    domains: ["ai_ml"]
+    tags: ["machine-learning", "classification", "prediction", "pytorch", "tensorflow"]
+    skills: ["python", "machine learning", "pytorch", "tensorflow", "openai", "fastapi"]
+    bullet: "Created a Machine Learning model to predict whether an individual's annual income exceeds $50K, based on demographic and employment-related attributes from the Adult Census Income Dataset."
+    link: "https://github.com/mirza1272/Adult-Income-Classification-Using-Machine-Learning"

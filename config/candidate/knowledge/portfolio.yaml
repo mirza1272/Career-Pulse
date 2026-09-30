@@ -1,0 +1,47 @@
+# ============================================================================
+# PORTFOLIO & LINKS — Haseeb Ur Rahman
+# ============================================================================
+# Everything the agent may reference as "where to see my work". These links can
+# be attached to applications and rendered in the resume header/footer.
+# Review every URL — most are placeholders until you confirm them.
+# ============================================================================
+
+owner: "Haseeb Ur Rahman"
+
+links:
+  github: "https://github.com/mirza1272"        # TODO(review)
+  linkedin: "https://www.linkedin.com/in/haseeb-ur-rahman-8b152234b" # TODO(review)
+  portfolio: "https://mirzahaseeb.me/"                       # TODO(review)
+  email: "mirzahaseeb0566@gmail.com"
+
+# Optional: highlighted work with public links, shown when a job asks for samples.
+highlights:
+  - project_id: "nemetron"
+    label: "Nemetron (Agentic AI RAG & Retrieval)"
+    url: "https://github.com/mirza1272/Nemetron"
+
+  - project_id: "signal_reach"
+    label: "Signal Reach (Agentic AI Lead Generation)"
+    url: "https://github.com/mirza1272/Signal-Reach"
+
+  - project_id: "hrconnect"
+    label: "HRConnect (MERN Full-Stack ATS)"
+    url: "https://hrconnect-ats.vercel.app/"
+
+  - project_id: "safe_web_access"
+    label: "Safe Web Access (Secure AI Web Fetching)"
+    url: "https://pypi.org/project/safe-web-access/"
+
+  - project_id: "xray_chest_classification"
+    label: "X-ray Pneumonia Detection (Deep Learning CNN)"
+    url: "https://github.com/mirza1272/X-ray-Chest-Classification-using-Deep-Learning-CNN-Pneumonia-Detection"
+
+  - project_id: "civicheat_autopilot"
+    label: "CivicHeat Autopilot (Urban Heat Agentic AI)"
+    url: "https://civic-heat-auto-pilot.vercel.app/"
+
+# Free-text one-liner used when an application form asks for a portfolio summary.
+summary: >
+  Computer Science student at FAST NUCES building real-world AI/ML and full-stack
+  applications. Public work spans deep-learning models, recommender systems, and
+  MERN/Django web platforms.

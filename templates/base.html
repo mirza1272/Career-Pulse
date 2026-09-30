@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Career Pulse" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0e1015;
+      --panel: #13151c;
+      --card: #181b24;
+      --bg-input: #202430;
+      --line: #272b38;
+      --line-hover: #363c4e;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --accent-glow: rgba(16, 185, 129, 0.18);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .side {
+      width: 230px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      padding: 0 22px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      padding: 10px 22px 4px;
+    }
+
+    .side a.nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 22px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .side a.nav-item:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .side a.nav-item.active {
+      color: var(--text);
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .side a.nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .side a.nav-item svg {
+      flex-shrink: 0;
+      stroke-width: 1.8;
+      color: var(--muted);
+      transition: color 0.15s ease;
+    }
+
+    .side a.nav-item:hover svg,
+    .side a.nav-item.active svg {
+      color: var(--accent);
+    }
+
+    .main {
+      flex: 1;
+      padding: 32px 40px;
+      min-width: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: border-color 0.2s ease;
+    }
+
+    .card .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card .value {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13.5px;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent);
+    }
+
+    a.rowlink {
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    a.rowlink:hover {
+      color: var(--accent);
+    }
+
+    form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 14px 0 6px;
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=password],
+    input[type=url],
+    input[type=number],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #0e1015;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+      opacity: 0.95;
+    }
+
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .btn.secondary:hover {
+      border-color: var(--line-hover);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .btn.danger {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .btn.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13.5px;
+    }
+
+    .emailbox {
+      background: var(--bg-input);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      white-space: pre-wrap;
+      font-size: 13.5px;
+      line-height: 1.55;
+      font-family: inherit;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 6px 0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    /* Mobile Header & Drawer */
+    .mobile-header {
+      display: none;
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      background: rgba(19, 21, 28, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 0 16px;
+      z-index: 1000;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mobile-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .mobile-menu-btn {
+      width: 42px;
+      height: 42px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      padding: 0;
+      touch-action: manipulation;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .mobile-menu-btn:active {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent);
+    }
+
+    .mobile-menu-btn .bar {
+      width: 20px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-menu-btn.active .bar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .mobile-menu-btn.active .bar:nth-child(2) {
+      opacity: 0;
+    }
+    .mobile-menu-btn.active .bar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .mobile-nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 16, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 998;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .mobile-nav-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+
+    .mobile-nav-drawer {
+      display: flex;
+      position: fixed;
+      top: 58px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--panel);
+      z-index: 999;
+      flex-direction: column;
+      padding: 16px 14px 28px;
+      border-bottom: 1px solid var(--line);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+
+    .mobile-nav-drawer.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      margin-bottom: 2px;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .mobile-nav-link:active,
+    .mobile-nav-link:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .mobile-nav-link.active {
+      color: var(--text);
+      background: rgba(16, 185, 129, 0.1);
+      border-left: 3px solid var(--accent);
+    }
+
+    .mobile-nav-link svg {
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    .mobile-nav-link.active svg {
+      color: var(--accent);
+    }
+
+    /* Universal Responsive Rules */
+    .mobile-only {
+      display: none !important;
+    }
+    .desktop-only {
+      display: block;
+    }
+
+    @media (max-width: 860px) {
+      .side {
+        display: none !important;
+      }
+      .mobile-header {
+        display: flex;
+      }
+      .mobile-only {
+        display: block !important;
+      }
+      .desktop-only {
+        display: none !important;
+      }
+      .main {
+        padding: 20px 16px 40px !important;
+      }
+      .cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+      }
+      .row2 {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .main {
+        padding: 14px 10px 32px !important;
+      }
+      .cards {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      .header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      h1 {
+        font-size: 20px !important;
+        margin-bottom: 14px !important;
+      }
+      .card {
+        padding: 14px 12px !important;
+        border-radius: 10px !important;
+      }
+      th, td {
+        padding: 10px 12px !important;
+        font-size: 12.5px !important;
+      }
+      .btn {
+        padding: 9px 14px !important;
+        font-size: 13px !important;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .main {
+        padding: 10px 6px 28px !important;
+      }
+      .mobile-brand {
+        font-size: 15px !important;
+      }
+      .card {
+        padding: 12px 10px !important;
+      }
+    }
+
+    /* Minimalist Real-Time Progress Bar */
+    #topProgressBarContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      z-index: 9999999;
+      pointer-events: none;
+    }
+    #topProgressBar {
+      width: 0%;
+      height: 100%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      transition: width 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    /* Modal Backdrop */
+    .custom-modal-backdrop {
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes appSpinner {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Real Top Working Progress Bar -->
+  <div id="topProgressBarContainer">
+    <div id="topProgressBar"></div>
+  </div>
+
+  <!-- ACTION OVERLAY (SPINNER) -->
+  <div id="appActionOverlay" style="display:none; position:fixed; inset:0; background:rgba(14, 16, 21, 0.92); backdrop-filter:blur(8px); z-index:999998; justify-content:center; align-items:center; flex-direction:column; color:var(--text);">
+    <div style="background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:36px 44px; max-width:480px; width:90%; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.8); position:relative;">
+      <div style="width:48px; height:48px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; margin:0 auto 18px; animation:appSpinner 0.8s linear infinite;"></div>
+      <h3 id="appOverlayTitle" style="font-size:18px; margin-bottom:6px; color:var(--text); font-weight:700;">Processing Action</h3>
+      <div id="appOverlaySubtitle" style="font-size:13px; margin-bottom:20px; color:var(--muted); line-height:1.4;">Executing request...</div>
+      <div style="background:var(--bg-input); border-radius:999px; height:8px; overflow:hidden; margin-bottom:12px; border:1px solid var(--line);">
+        <div id="appOverlayInnerBar" style="width:20%; height:100%; background:var(--accent); border-radius:999px; transition:width 0.5s ease;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:'JetBrains Mono', monospace;">
+        <div id="appOverlayStepText" style="color:var(--accent); text-align:left; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Working...</div>
+        <div id="appOverlayPercentage" style="color:var(--muted);">20%</div>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:var(--muted); opacity:0.6;">Please wait — do not close this tab</div>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div id="customConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(14, 16, 21, 0.85); backdrop-filter:blur(6px); z-index:999999; justify-content:center; align-items:center; flex-direction:column; padding:16px;">
+    <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; max-width:460px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,0.85); overflow:hidden;">
+      <div style="padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg id="confirmModalIconSvg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <h3 id="confirmModalTitle" style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Confirm Action</h3>
+        </div>
+        <button type="button" onclick="window.closeConfirmModal()" style="background:transparent; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;" title="Close">&times;</button>
+      </div>
+      <div id="confirmModalBody" style="padding:20px 22px; font-size:13.5px; color:#d1d5db; line-height:1.5;">
+        Are you sure you want to proceed?
+      </div>
+      <div style="padding:14px 22px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+        <button type="button" id="confirmModalCancelBtn" onclick="window.closeConfirmModal()" class="btn secondary" style="margin:0; padding:8px 16px; font-size:13px;">Cancel</button>
+        <button type="button" id="confirmModalOkBtn" class="btn" style="margin:0; padding:8px 20px; font-size:13px; font-weight:700;">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="changePasswordModal" class="custom-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(14, 16, 21, 0.85); backdrop-filter:blur(6px); z-index:999999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:420px; padding:24px; box-shadow:0 24px 60px rgba(0,0,0,0.85);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Change Account Password</h3>
+        <button type="button" onclick="closeChangePasswordModal()" style="background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <form id="changePasswordForm" onsubmit="submitChangePassword(event)">
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Current Password</label>
+          <input type="password" id="modal_current_password" required placeholder="Enter current password"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">New Password (Min. 6 chars)</label>
+          <input type="password" id="modal_new_password" required minlength="6" placeholder="Enter new password"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Confirm New Password</label>
+          <input type="password" id="modal_confirm_password" required minlength="6" placeholder="Confirm new password"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;">
+        </div>
+        <div id="changePasswordAlert" style="display:none; font-size:12px; padding:9px 12px; border-radius:6px; margin-bottom:14px;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" onclick="closeChangePasswordModal()" style="background:transparent; border:1px solid var(--line); color:var(--text); padding:8px 14px; border-radius:6px; font-size:12px; cursor:pointer;">Cancel</button>
+          <button type="submit" id="changePasswordBtn" style="background:var(--accent); border:none; color:#0e1015; padding:8px 18px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MOBILE HEADER -->
+  <header class="mobile-header">
+    <a href="/" class="mobile-brand">
+      <span>Career Pulse</span>
+      <span class="brand-dot"></span>
+    </a>
+    <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation" onclick="toggleMobileNav()">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+  </header>
+
+  <!-- MOBILE NAVIGATION BACKDROP & DRAWER -->
+  <div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileNav(false)"></div>
+  <div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <a href="/" class="mobile-nav-link {% if request.url.path == '/' or request.url.path == '/dashboard' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="/radar" class="mobile-nav-link {% if request.url.path == '/radar' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 6a6 6 0 0 1 6 6"></path><circle cx="12" cy="12" r="2"></circle></svg>
+      <span>Radar Jobs</span>
+    </a>
+    <a href="/workspace" class="mobile-nav-link {% if request.url.path == '/workspace' or request.url.path == '/approvals' or request.url.path == '/queue' or request.url.path.startswith('/application') %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      <span>Workspace Queue</span>
+    </a>
+    <a href="/new" class="mobile-nav-link {% if request.url.path == '/new' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>New Application</span>
+    </a>
+    <a href="/sent" class="mobile-nav-link {% if request.url.path == '/sent' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      <span>Sent Archive</span>
+    </a>
+    <a href="/templates" class="mobile-nav-link {% if request.url.path.startswith('/templates') %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>Resume Templates</span>
+    </a>
+    <a href="/knowledge-base" class="mobile-nav-link {% if request.url.path == '/knowledge-base' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Knowledge Base</span>
+    </a>
+    <a href="/credentials" class="mobile-nav-link {% if request.url.path == '/credentials' %}active{% endif %}" onclick="toggleMobileNav(false)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      <span>Credentials</span>
+      {% if current_user and (not current_user.smtp_username or not current_user.smtp_password_encrypted) %}
+      <span style="width:6px; height:6px; background:#f59e0b; border-radius:50%; margin-left:auto;"></span>
+      {% endif %}
+    </a>
+    {% if current_user and current_user.email.lower() == config.ADMIN_EMAIL.lower() %}
+    <a href="/admin/users" class="mobile-nav-link {% if request.url.path == '/admin/users' %}active{% endif %}" onclick="toggleMobileNav(false)" style="color:#10b981;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <span>System Admin</span>
+    </a>
+    {% endif %}
+    <div style="margin-top:auto; padding-top:16px; border-top:1px solid var(--line);">
+      <div style="margin-bottom:12px; padding:0 4px;">
+        <div style="font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          {{ current_user.name or current_user.email.split('@')[0] if current_user else 'Authenticated' }}
+        </div>
+        <div style="font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:'JetBrains Mono', monospace;">
+          {{ current_user.email if current_user else '' }}
+        </div>
+      </div>
+      <button type="button" onclick="openChangePasswordModal()" style="width:100%; text-align:left; background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:6px; color:var(--muted); font-size:13px; font-weight:600; padding:10px 14px; cursor:pointer; margin-bottom:8px;">
+        Change Password
+      </button>
+      <form action="/logout" method="post" style="margin:0;">
+        <button type="submit" style="color:#ef4444; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.2); border-radius:6px; font-size:13px; font-weight:700; display:block; padding:10px 14px; cursor:pointer; text-align:left; width:100%;">
+          Sign Out
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DESKTOP APP SHELL -->
+  <div class="wrap">
+    <nav class="side">
+      <div class="brand">
+        <span>Career Pulse</span>
+        <span class="brand-dot"></span>
+      </div>
+
+      <div class="nav-label">Overview</div>
+      <a href="/" class="nav-item {% if request.url.path == '/' or request.url.path == '/dashboard' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+        <span>Dashboard</span>
+      </a>
+
+      <div class="nav-label" style="margin-top:14px;">Engine</div>
+      <a href="/radar" class="nav-item {% if request.url.path == '/radar' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 6a6 6 0 0 1 6 6"></path><circle cx="12" cy="12" r="2"></circle></svg>
+        <span>Radar Jobs</span>
+      </a>
+      <a href="/workspace" class="nav-item {% if request.url.path == '/workspace' or request.url.path == '/approvals' or request.url.path == '/queue' or request.url.path.startswith('/application') %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        <span>Workspace Queue</span>
+      </a>
+      <a href="/new" class="nav-item {% if request.url.path == '/new' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>New Application</span>
+      </a>
+      <a href="/sent" class="nav-item {% if request.url.path == '/sent' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        <span>Sent Archive</span>
+      </a>
+
+      <div class="nav-label" style="margin-top:14px;">Profile &amp; Setup</div>
+      <a href="/templates" class="nav-item {% if request.url.path.startswith('/templates') %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Resume Templates</span>
+      </a>
+      <a href="/knowledge-base" class="nav-item {% if request.url.path == '/knowledge-base' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Knowledge Base</span>
+      </a>
+      <a href="/credentials" class="nav-item {% if request.url.path == '/credentials' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Credentials</span>
+        {% if current_user and (not current_user.smtp_username or not current_user.smtp_password_encrypted) %}
+        <span style="width:6px; height:6px; background:#f59e0b; border-radius:50%; margin-left:auto;"></span>
+        {% endif %}
+      </a>
+
+      {% if current_user and current_user.email.lower() == config.ADMIN_EMAIL.lower() %}
+      <div class="nav-label" style="margin-top:14px;">Administration</div>
+      <a href="/admin/users" class="nav-item {% if request.url.path == '/admin/users' %}active{% endif %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        <span>User Accounts</span>
+      </a>
+      {% endif %}
+
+      <!-- ACCOUNT FOOTER -->
+      <div style="margin-top:auto; padding:18px 20px; border-top:1px solid var(--line);">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12.5px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ current_user.name or current_user.email.split('@')[0] if current_user else 'Authenticated' }}
+          </div>
+          <div style="font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:'JetBrains Mono', monospace;">
+            {{ current_user.email if current_user else '' }}
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button type="button" onclick="openChangePasswordModal()"
+            style="width:100%; text-align:center; background:transparent; border:1px solid var(--line); color:var(--muted); padding:6px 10px; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer; transition:all 0.15s;"
+            onmouseover="this.style.color='var(--text)'; this.style.borderColor='var(--line-hover)'" onmouseout="this.style.color='var(--muted)'; this.style.borderColor='var(--line)'">
+            Change Password
+          </button>
+          <form action="/logout" method="post" style="margin:0;">
+            <button type="submit"
+              style="width:100%; text-align:center; display:block; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.2); color:#ef4444; padding:6px 10px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; transition:all 0.15s;"
+              onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'">
+              Sign Out
+            </button>
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    // Mobile Drawer Toggle
+    window.toggleMobileNav = function(force) {
+      const drawer = document.getElementById('mobileNavDrawer');
+      const btn = document.getElementById('mobileMenuBtn');
+      const backdrop = document.getElementById('mobileNavBackdrop');
+      if (!drawer || !btn) return;
+      const shouldOpen = force !== undefined ? force : !drawer.classList.contains('open');
+      if (shouldOpen) {
+        drawer.classList.add('open');
+        btn.classList.add('active');
+        if (backdrop) backdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      } else {
+        drawer.classList.remove('open');
+        btn.classList.remove('active');
+        if (backdrop) backdrop.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    };
+
+    // Password Change Modal Handlers
+    window.openChangePasswordModal = function() {
+      document.getElementById('changePasswordForm').reset();
+      document.getElementById('changePasswordAlert').style.display = 'none';
+      document.getElementById('changePasswordModal').style.display = 'flex';
+      toggleMobileNav(false);
+    };
+
+    window.closeChangePasswordModal = function() {
+      document.getElementById('changePasswordModal').style.display = 'none';
+    };
+
+    window.submitChangePassword = async function(e) {
+      e.preventDefault();
+      const cur = document.getElementById('modal_current_password').value;
+      const np = document.getElementById('modal_new_password').value;
+      const cp = document.getElementById('modal_confirm_password').value;
+      const alertBox = document.getElementById('changePasswordAlert');
+      const btn = document.getElementById('changePasswordBtn');
+
+      if (np !== cp) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+        alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        alertBox.style.color = '#fca5a5';
+        alertBox.textContent = 'New passwords do not match.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      try {
+        const formData = new URLSearchParams();
+        formData.append('current_password', cur);
+        formData.append('new_password', np);
+        formData.append('confirm_password', cp);
+
+        const res = await fetch('/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        });
+        const data = await res.json();
+
+        alertBox.style.display = 'block';
+        if (data.success) {
+          alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+          alertBox.style.color = '#34d399';
+          alertBox.textContent = data.message || 'Password updated successfully.';
+          setTimeout(() => {
+            closeChangePasswordModal();
+          }, 1500);
+        } else {
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+          alertBox.style.color = '#fca5a5';
+          alertBox.textContent = data.message || 'Failed to update password.';
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+        alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        alertBox.style.color = '#fca5a5';
+        alertBox.textContent = err.message || 'Network error.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update Password';
+      }
+    };
+
+    // Real Working Progress Bar
+    window.startProgressBar = function(initialPct = 25) {
+      const bar = document.getElementById('topProgressBar');
+      if (!bar) return;
+      bar.style.opacity = '1';
+      bar.style.width = initialPct + '%';
+      if (window._topBarInterval) clearInterval(window._topBarInterval);
+      let cur = initialPct;
+      window._topBarInterval = setInterval(() => {
+        if (cur < 88) {
+          cur += Math.random() * 8;
+          bar.style.width = cur + '%';
+        }
+      }, 300);
+    };
+
+    window.finishProgressBar = function() {
+      const bar = document.getElementById('topProgressBar');
+      if (!bar) return;
+      if (window._topBarInterval) clearInterval(window._topBarInterval);
+      bar.style.width = '100%';
+      setTimeout(() => {
+        bar.style.opacity = '0';
+        setTimeout(() => { bar.style.width = '0%'; }, 300);
+      }, 250);
+    };
+
+    // Modal Confirmation Dialog Engine
+    // Global HTML escaper for values interpolated into innerHTML templates.
+    window.escapeHtml = function(value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    };
+
+    window.openConfirmModal = function(config) {
+      const modal = document.getElementById('customConfirmModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const bodyEl = document.getElementById('confirmModalBody');
+      const okBtn = document.getElementById('confirmModalOkBtn');
+      const cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+      if (!modal || !titleEl || !bodyEl || !okBtn) return;
+
+      titleEl.textContent = config.title || "Confirm Action";
+      bodyEl.innerHTML = config.body || "Are you sure you want to proceed?";
+      okBtn.textContent = config.confirmText || "Confirm";
+      okBtn.style.background = config.confirmBg || "var(--accent)";
+      okBtn.style.color = config.confirmColor || "#0e1015";
+
+      const newOkBtn = okBtn.cloneNode(true);
+      okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+      newOkBtn.addEventListener('click', () => {
+        window.closeConfirmModal();
+        if (typeof config.onConfirm === 'function') {
+          config.onConfirm();
+        }
+      });
+
+      modal.style.display = 'flex';
+    };
+
+    window.closeConfirmModal = function() {
+      const modal = document.getElementById('customConfirmModal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.confirmDelete = function(e, formOrUrl, itemDescription = "this item") {
+      if (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      }
+      let targetForm = formOrUrl;
+      if (!targetForm && e && e.target) {
+        targetForm = e.target.closest('form');
+      }
+      // itemDescription comes from data-* attributes (e.g. job titles) and
+      // is interpolated into innerHTML below — escape it first (stored-XSS).
+      const safeDescription = window.escapeHtml
+        ? window.escapeHtml(itemDescription)
+        : String(itemDescription).replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+          }[c]));
+      window.openConfirmModal({
+        title: "Confirm Permanent Deletion",
+        body: `
+          <div style="font-size:14px; margin-bottom:10px; color:var(--text);">
+            Are you sure you want to permanently delete <strong>${safeDescription}</strong>?
+          </div>
+          <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:#fca5a5; padding:10px 14px; border-radius:8px; font-size:12px; line-height:1.4;">
+            Warning: This will remove the record from both Career Pulse and cloud databases, along with any tailored resume artifacts. This action cannot be undone.
+          </div>
+        `,
+        confirmText: "Delete Permanently",
+        confirmBg: "#ef4444",
+        confirmColor: "#ffffff",
+        onConfirm: () => {
+          window.startProgressBar(30);
+          if (typeof targetForm === "string") {
+            window.location.href = targetForm;
+          } else if (targetForm) {
+            try {
+              HTMLFormElement.prototype.submit.call(targetForm);
+            } catch (err) {
+              if (typeof targetForm.submit === "function") targetForm.submit();
+            }
+          }
+        }
+      });
+      return false;
+    };
+
+    window.showActionOverlay = function(title, sub, steps) {
+      const overlay = document.getElementById('appActionOverlay');
+      if (!overlay) return;
+      if (title) document.getElementById('appOverlayTitle').textContent = title;
+      if (sub) document.getElementById('appOverlaySubtitle').textContent = sub;
+
+      // Reset bar to 20% and start animation
+      const innerBar = document.getElementById('appOverlayInnerBar');
+      const stepText = document.getElementById('appOverlayStepText');
+      const pctText  = document.getElementById('appOverlayPercentage');
+      if (innerBar) { innerBar.style.width = '20%'; }
+      if (pctText)  { pctText.textContent = '20%'; }
+      if (stepText) { stepText.textContent = (steps && steps[0]) || 'Working...'; }
+
+      overlay.style.display = 'flex';
+
+      // Clear any previous animation
+      if (window._overlayBarInterval) clearInterval(window._overlayBarInterval);
+
+      let cur = 20;
+      let stepIdx = 0;
+      const stepList = steps || [];
+      window._overlayBarInterval = setInterval(() => {
+        if (cur < 85) {
+          // Slow crawl: +2–5% every 600ms
+          cur += 2 + Math.random() * 3;
+          if (cur > 85) cur = 85;
+          if (innerBar) innerBar.style.width = cur + '%';
+          if (pctText)  pctText.textContent = Math.round(cur) + '%';
+          // Advance step label
+          if (stepList.length > 0) {
+            const newIdx = Math.min(stepList.length - 1, Math.floor((cur - 20) / (65 / stepList.length)));
+            if (newIdx !== stepIdx) {
+              stepIdx = newIdx;
+              if (stepText) stepText.textContent = stepList[stepIdx];
+            }
+          }
+        } else {
+          // Stall at 85% — pulse the label
+          if (stepText && stepList.length > 0) stepText.textContent = stepList[stepList.length - 1];
+        }
+      }, 600);
+    };
+
+    window.hideActionOverlay = function() {
+      const overlay = document.getElementById('appActionOverlay');
+      if (!overlay) return;
+      // Stop animation and snap to 100%
+      if (window._overlayBarInterval) {
+        clearInterval(window._overlayBarInterval);
+        window._overlayBarInterval = null;
+      }
+      const innerBar = document.getElementById('appOverlayInnerBar');
+      const pctText  = document.getElementById('appOverlayPercentage');
+      const stepText = document.getElementById('appOverlayStepText');
+      if (innerBar) innerBar.style.width = '100%';
+      if (pctText)  pctText.textContent = '100%';
+      if (stepText) stepText.textContent = 'Done!';
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      window.hideActionOverlay();
+      window.finishProgressBar();
+
+      // Intercept all links for progress bar
+      document.querySelectorAll('a[href]').forEach(link => {
+        link.addEventListener('click', function() {
+          const href = this.getAttribute('href');
+          const target = this.getAttribute('target');
+          if (!href || href.startsWith('#') || href.startsWith('javascript:') || target === '_blank') return;
+          window.startProgressBar(25);
+        });
+      });
+
+      // Intercept heavy forms
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          if (e.defaultPrevented) return;
+          const isHeavy = this.classList.contains('heavy-action-overlay') || this.getAttribute('data-modal') === 'true';
+          if (isHeavy) {
+            const customTitle = this.getAttribute('data-title') || "Processing Request";
+            const customSub = this.getAttribute('data-sub') || "Contacting server and updating state...";
+            window.showActionOverlay(customTitle, customSub);
+          } else {
+            window.startProgressBar(30);
+          }
+        });
+      });
+    });
+
+    window.addEventListener('pageshow', (e) => {
+      // Only hide overlay on back/forward cache restores (bfcache), not on active form-submit navigations.
+      // When the browser restores a page from bfcache, e.persisted === true.
+      if (e.persisted) {
+        window.hideActionOverlay();
+        window.finishProgressBar();
+      }
+    });
+  </script>
+</body>
+
+</html>

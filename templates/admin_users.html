@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .admin-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 14px;
+    align-items: flex-end;
+  }
+  @media (max-width: 860px) {
+    .admin-form-grid {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+  @media (max-width: 560px) {
+    .admin-form-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .admin-form-grid button[type=submit] {
+      width: 100% !important;
+    }
+  }
+</style>
+
+<div style="max-width: 1050px; margin: 0 auto;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 style="font-size:24px; font-weight:700; color:var(--text); margin-bottom:6px; letter-spacing:-0.02em;">System Administrator Console</h1>
+      <p style="color:var(--muted); font-size:14px;">Provision user accounts, configure custom initial passwords, and manage tenant credentials.</p>
+    </div>
+    <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.3); border-radius:20px; font-size:12px; font-weight:600; color:#10b981;">
+      <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
+      Administrator Access Verified
+    </span>
+  </div>
+
+  {% if created %}
+  <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <div style="font-size:14px; font-weight:500; color:#34d399;">
+      User account provisioned successfully. User can now sign in with their email and chosen password.
+    </div>
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <div style="font-size:14px; font-weight:500; color:#fca5a5;">
+      {{ error }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- PROVISION NEW USER CARD -->
+  <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:30px;">
+    <h2 style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="8.5" cy="7" r="4"></circle>
+        <line x1="20" y1="8" x2="20" y2="14"></line>
+        <line x1="23" y1="11" x2="17" y2="11"></line>
+      </svg>
+      Provision New User Account
+    </h2>
+
+    <form method="POST" action="/admin/users/create">
+      <div class="admin-form-grid">
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Full Name</label>
+          <input type="text" name="name" placeholder="User Full Name" required
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Email Address</label>
+          <input type="email" name="email" placeholder="user@company.com" required
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Initial Password (Admin Chosen)</label>
+          <input type="password" name="password" placeholder="Min. 6 characters" required
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+
+        <div>
+          <button type="submit"
+            style="background:var(--accent); border:none; color:#0e1015; padding:9px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; height:38px; white-space:nowrap; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            Grant Access
+          </button>
+        </div>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px;">
+        Users can change this password at any time after their initial sign-in via the self-service button in their account drawer.
+      </div>
+    </form>
+  </div>
+
+  <!-- ACCOUNTS TABLE -->
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h3 style="font-size:15px; font-weight:700; color:var(--text); margin:0;">User Directory ({{ users|length }})</h3>
+      <span style="font-size:12px; color:var(--muted);">Private Multi-Tenant SaaS Access</span>
+    </div>
+
+    <div class="table-responsive" style="margin-bottom:0; border-radius:0;">
+    <table style="width:100%; min-width:680px; border-collapse:collapse; border:none;">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.02); color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em;">
+          <th style="padding:12px 18px; text-align:left; font-weight:600;">User / Identity</th>
+          <th style="padding:12px 18px; text-align:left; font-weight:600;">Email</th>
+          <th style="padding:12px 18px; text-align:center; font-weight:600;">Status</th>
+          <th style="padding:12px 18px; text-align:center; font-weight:600;">Credentials</th>
+          <th style="padding:12px 18px; text-align:left; font-weight:600;">Registered</th>
+          <th style="padding:12px 18px; text-align:right; font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr style="border-top:1px solid var(--line); font-size:13px;">
+          <td style="padding:14px 18px; font-weight:600; color:var(--text);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span>{{ u.name or "Unnamed" }}</span>
+              {% if u.email.lower() == config.ADMIN_EMAIL.lower() %}
+              <span style="padding:2px 6px; background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.3); border-radius:4px; font-size:10px; font-weight:700; color:#10b981;">ADMIN</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="padding:14px 18px; color:var(--text); font-family:monospace; font-size:12px;">{{ u.email }}</td>
+          <td style="padding:14px 18px; text-align:center;">
+            {% if u.is_active %}
+            <span style="padding:3px 8px; background:rgba(16, 185, 129, 0.12); color:#10b981; border-radius:12px; font-size:11px; font-weight:600;">Active</span>
+            {% else %}
+            <span style="padding:3px 8px; background:rgba(239, 68, 68, 0.12); color:#ef4444; border-radius:12px; font-size:11px; font-weight:600;">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="padding:14px 18px; text-align:center;">
+            {% if u.smtp_username and u.smtp_password_encrypted %}
+            <span style="color:#10b981; font-weight:600; font-size:12px;">Configured</span>
+            {% else %}
+            <span style="color:#f59e0b; font-weight:500; font-size:12px;">Pending Setup</span>
+            {% endif %}
+          </td>
+          <td style="padding:14px 18px; color:var(--muted); font-size:12px;">
+            {{ u.created_at.strftime('%b %d, %Y') if u.created_at else '—' }}
+          </td>
+          <td style="padding:14px 18px; text-align:right;">
+            <div style="display:inline-flex; gap:8px; align-items:center;">
+              <button type="button" onclick="openResetModal({{ u.id }}, '{{ u.email }}')"
+                style="background:transparent; border:1px solid var(--line); color:var(--muted); padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer;" onmouseover="this.style.color='var(--text)'; this.style.borderColor='var(--border-hover)'" onmouseout="this.style.color='var(--muted)'; this.style.borderColor='var(--line)'">
+                Reset Password
+              </button>
+
+              {% if u.email.lower() != config.ADMIN_EMAIL.lower() %}
+              <form method="POST" action="/admin/users/{{ u.id }}/toggle-status" style="display:inline;">
+                <button type="submit"
+                  style="background:transparent; border:1px solid var(--line); color:{% if u.is_active %}#ef4444{% else %}#10b981{% endif %}; padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+                  {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div id="resetPwdModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; width:100%; max-width:min(400px, 95vw); padding:24px; box-sizing:border-box;">
+    <h3 style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:8px;">Reset User Password</h3>
+    <p style="font-size:12px; color:var(--muted); margin-bottom:16px;" id="resetModalTarget">Setting new password for user.</p>
+
+    <form method="POST" id="resetPwdForm">
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-size:12px; font-weight:600; color:var(--text); margin-bottom:6px;">New Password</label>
+        <input type="password" name="new_password" placeholder="Enter new password" required minlength="6"
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeResetModal()"
+          style="background:transparent; border:1px solid var(--line); color:var(--text); padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer;">
+          Cancel
+        </button>
+        <button type="submit"
+          style="background:var(--accent); border:none; color:#0e1015; padding:7px 16px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
+          Update Password
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openResetModal(userId, userEmail) {
+  document.getElementById('resetModalTarget').textContent = `Setting new password for: ${userEmail}`;
+  document.getElementById('resetPwdForm').action = `/admin/users/${userId}/reset-password`;
+  document.getElementById('resetPwdModal').style.display = 'flex';
+}
+function closeResetModal() {
+  document.getElementById('resetPwdModal').style.display = 'none';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+/* Self-contained Local Fonts Bundle (Zero External Network Latency) */
+
+/* Nunito */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/assets/fonts/Nunito-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 600;
+  src: url('/assets/fonts/Nunito-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/assets/fonts/Nunito-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/assets/fonts/Nunito-Italic.ttf') format('truetype');
+}
+
+/* Alegreya */
+@font-face {
+  font-family: 'Alegreya';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/assets/fonts/Alegreya-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Alegreya';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/assets/fonts/Alegreya-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Alegreya';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/assets/fonts/Alegreya-Italic.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Alegreya';
+  font-style: italic;
+  font-weight: 700;
+  src: url('/assets/fonts/Alegreya-BoldItalic.ttf') format('truetype');
+}
+
+/* Source Sans 3 */
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/assets/fonts/SourceSans3-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 600;
+  src: url('/assets/fonts/SourceSans3-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/assets/fonts/SourceSans3-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/assets/fonts/SourceSans3-Italic.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: italic;
+  font-weight: 700;
+  src: url('/assets/fonts/SourceSans3-BoldItalic.ttf') format('truetype');
+}
+
+/* Amiri */
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/assets/fonts/Amiri-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/assets/fonts/Amiri-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Amiri';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/assets/fonts/Amiri-Italic.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Amiri';
+  font-style: italic;
+  font-weight: 700;
+  src: url('/assets/fonts/Amiri-BoldItalic.ttf') format('truetype');
+}

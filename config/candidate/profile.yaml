@@ -1,0 +1,189 @@
+# LIVE CANDIDATE PROFILE — Haseeb Ur Rahman
+#
+# This is the authoritative profile the running agent loads (matching, evidence,
+# tailoring). It is the identity/skills/experience half of your knowledge base.
+# The richer, human-editable modules live beside it in:
+#
+#   config/candidate/knowledge/projects.yaml   <- project library (agent picks best)
+#   config/candidate/knowledge/portfolio.yaml  <- portfolio + links
+#
+# To swap this profile for a different person, replace this file AND the
+# knowledge/ modules AND the LaTeX templates in resumes/templates/latex/.
+#
+# NOTE: content below was extracted from your real resumes (SE_AM/SE_FD/SE_AL).
+# Review every field — especially links (placeholders), dates, and seniority.
+
+profile_version: 2
+summary: "AI/ML Engineer specializing in Agentic AI, RAG, and Machine Learning."
+identity:
+  name: "Haseeb Ur Rahman"
+  email: "mirzahaseeb0566@gmail.com"
+  phone: "+92 303 8607925"
+  location:
+    city: "Sahiwal"
+    country: "PK"
+  links:
+    github: "https://github.com/mirza1272"
+    linkedin: "https://www.linkedin.com/in/haseeb-ur-rahman-8b152234b"
+    portfolio: "https://mirzahaseeb.me/"
+
+preferences:
+  preferred_locations:
+    - "Faisalabad"
+    - "Lahore"
+    - "Islamabad"
+    - "Karachi"
+    - "Remote"
+  remote_preference: "remote_first"
+  employment_type:
+    - "full_time"
+    - "contract"
+    - "internship"
+  target_roles:
+    - "ai_ml_engineer"
+    - "ml_engineer"
+    - "machine_learning_engineer"
+    - "software_engineer"
+    - "full_stack_developer"
+    - "web_developer"
+    - "python_developer"
+    - "backend_developer"
+  excluded_roles:
+    - "sales_engineer"
+    - "qa_manual"
+  industries_preferred:
+    - "ai"
+    - "saas"
+    - "fintech"
+  industries_excluded:
+    - "gambling"
+    - "adtech_surveillance"
+  # Left empty on purpose: the agent searches ALL companies in your preferred
+  # locations, not a fixed list. Add a company here only to ALSO run extra
+  # searches directly against its careers page — it never restricts the search.
+  watched_companies: []
+  ignored_companies: []
+  ignored_domains: []
+
+# Grouped by how strongly you can defend each skill in an interview.
+skills:
+  expert:
+    - "python"
+    - "machine learning"
+    - "deep learning"
+    - "rag"
+    - "llms"
+    - "agentic ai"
+  proficient:
+    - "fastapi"
+    - "scikit-learn"
+    - "pytorch"
+    - "tensorflow"
+    - "numpy"
+    - "pandas"
+    - "matplotlib"
+    - "seaborn"
+    - "react.js"
+    - "react"
+    - "rest apis"
+    - "pydantic"
+    - "sql"
+    - "javascript"
+    - "c++"
+  familiar:
+    - "groq"
+    - "google gemini"
+    - "vapi"
+    - "mongodb"
+    - "chromadb"
+    - "falkordb"
+    - "supabase"
+    - "vercel"
+    - "git"
+    - "github"
+    - "cnn"
+    - "knowledge graphs"
+
+experience_years: 0.5
+
+education:
+  - degree: "Bachelor’s in Computer Science"
+    field: "Computer Science"
+    institution: "FAST National University of Computer and Emerging Sciences"
+    graduation_date: "2027-06"
+    status: "in_progress"
+    start: "2023"
+    location: "Pakistan"
+
+experience:
+  - employer: "CodeCelix"
+    title: "ML Engineer"
+    start: "2025-12"
+    end: "2026-03"
+    location: "Remote"
+    skills_used: ["python", "scikit-learn", "machine learning", "data preprocessing", "predictive modeling"]
+    bullets:
+      - "Led a team of 5 members in developing end-to-end Machine Learning pipelines, covering data preprocessing, feature engineering, training, evaluation, and optimization."
+      - "Built and optimized reusable ML workflows using Python and Scikit-learn for real world datasets and predictive modeling."
+  - employer: "Broadstone Technologies"
+    title: "AI / ML Engineer"
+    start: "2026-06"
+    end: "2026-08"
+    location: "Lahore, Punjab, Pakistan"
+    skills_used: ["python", "fastapi", "rag", "knowledge graphs", "llms", "data pipelines", "aws", "azure"]
+    bullets:
+      - "Developed FastAPI backend services for a cybersecurity product by handling data processing and AI-driven application workflows."
+      - "Designed and implemented a Knowledge Graph RAG pipeline for contextual retrieval, relationship based reasoning, and data analysis."
+      - "Built data processing pipelines to normalize and structure information from AWS, Azure, Slack, Zoom, Microsoft Teams, and Copilot into standardized JSON."
+
+projects:
+  - name: "Nemetron"
+    subtitle: "Agentic AI Knowledge & Retrieval System"
+    description: "Built an Agentic AI system that combines LLMs with RAG and vector search to retrieve relevant information and provide context aware responses. Developed using Python, integrating AI agents, document processing, embeddings, and retrieval workflows."
+    skills: ["python", "rag", "llms", "agentic ai", "vector search"]
+    link: "https://nemetron.vercel.app/"
+  - name: "Signal Reach"
+    subtitle: "Agentic AI Lead Generation Platform"
+    description: "Developed an Agentic AI lead generation platform that automates prospect research, data collection, and lead qualification using Python, AI agents, and FastAPI."
+    skills: ["python", "fastapi", "agentic ai", "automation"]
+    link: "https://github.com/mirza1272/Signal-Reach"
+  - name: "Safe Web Access"
+    subtitle: "Secure Web Fetching & AI Data Ingestion Package"
+    description: "Developed and published a Python package for secure web access in AI agents and RAG pipelines, implementing SSRF protection, URL validation, safe redirects, domain/IP policies, response limits, crawl budgets, and async/sync HTTP clients."
+    skills: ["python", "security", "http clients", "ssrf protection"]
+    link: "https://pypi.org/project/safe-web-access/"
+  - name: "CivicHeat Autopilot"
+    subtitle: "Agentic AI Urban Heat Response & Planning System"
+    description: "Developed an Agentic AI urban heat planning system that processes street-level temperature, forecast, and exposure data to rank high-risk areas and generate actionable response plans using FortyGuard Temperature API and Groq."
+    skills: ["python", "groq", "llms", "optimization", "apis"]
+    link: "https://civic-heat-auto-pilot.vercel.app/"
+  - name: "Nexus AI"
+    subtitle: "Voice-Enabled RAG Knowledge Assistant"
+    description: "Built a custom RAG-based knowledge assistant combining Vapi voice interaction with FastAPI backend, FastEmbed embeddings, ChromaDB vector retrieval, and Groq LLM streaming responses."
+    skills: ["fastapi", "vapi", "chromadb", "groq", "rag", "voice ai"]
+    link: "https://github.com/mirza1272/VAPI-Assistant"
+  - name: "X-ray Chest Classification"
+    subtitle: "Deep Learning Model for Pneumonia Detection"
+    description: "Developed a CNN-based image classification model for detecting chest conditions from X-ray images with data preprocessing, training, and performance evaluation."
+    skills: ["python", "cnn", "deep learning", "image classification"]
+    link: "https://github.com/mirza1272/X-ray-Chest-Classification-using-Deep-Learning-CNN-Pneumonia-Detection"
+  - name: "HRConnect"
+    subtitle: "ATS System"
+    description: "Built a MERN-based recruitment system for managing job postings, applications, and hiring workflows across multiple branches. Developed responsive frontend interfaces using React, HTML, CSS, and Tailwind CSS for user dashboards and admin panels."
+    skills: ["react.js", "html", "css", "javascript", "Node.js", "express.js", "mongodb"]
+    link: "https://hrconnect-ats.vercel.app/"
+  - name: "Recommendation System"
+    subtitle: "Hybrid Movie Recommendation"
+    description: "Engineered a hybrid AI Movie Recommendation System that combines classical AI techniques (BFS, DFS, A*, CSP, heuristics) with machine learning (K-Means clustering and ANN using PyTorch/TensorFlow)."
+    skills: ["python", "machine learning", "pytorch", "tensorflow", "openai", "fastapi"]
+    link: "https://github.com/mirza1272/Movie-Recommendation-System"
+  - name: "Income Classification Model"
+    subtitle: "Prediction using Demographic Data"
+    description: "Created a Machine Learning model to predict whether an individual's annual income exceeds $50K, based on demographic and employment-related attributes from the Adult Census Income Dataset."
+    skills: ["python", "machine learning", "pytorch", "tensorflow", "openai", "fastapi"]
+    link: "https://github.com/mirza1272/Adult-Income-Classification-Using-Machine-Learning"
+
+
+
+certifications: []
+

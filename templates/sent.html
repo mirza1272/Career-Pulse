@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+  <h1 style="margin:0;">Sent Applications</h1>
+  <form method="post" action="/sent/sync-cloud" style="margin:0;">
+    <button type="submit" class="btn secondary" style="margin:0; padding:8px 16px; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="Sync all sent and manual portal applications to Supabase Cloud">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+      Sync with Supabase
+    </button>
+  </form>
+</div>
+
+{% if synced %}
+  <div class="banner" style="background:#064e3b; border:1px solid #059669; color:#34d399; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px; display:flex; align-items:center; gap:8px;">
+    <span><strong>Supabase Cloud Synchronized!</strong> All applications and status updates have been pushed to Supabase.</span>
+  </div>
+{% elif deleted %}
+  <div class="banner" style="background:#2b1114; border:1px solid #5c2027; color:#ff8080; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px; display:flex; align-items:center; gap:8px;">
+    <span>Application record removed from database and Supabase Cloud.</span>
+  </div>
+{% endif %}
+
+<div class="cards">
+  <div class="card"><div class="label">Total Dispatched / Applied</div><div class="value" style="color:var(--green)">{{ sent_items|length }}</div></div>
+  <div class="card"><div class="label">Test-Mode Redirects</div><div class="value">{{ counts.redirected }}</div></div>
+  <div class="card"><div class="label">Manual Portal Applications</div><div class="value">{{ counts.manual }}</div></div>
+  <div class="card"><div class="label">Average ATS Score</div><div class="value" style="color:var(--accent)">{{ avg_ats }}</div></div>
+</div>
+
+<div class="table-responsive">
+  <table style="min-width: 680px;">
+    <thead>
+      <tr><th>Role &amp; Company</th><th>Recipient / Portal</th><th>Delivery / Mode</th><th>ATS</th><th>Sent Date</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for a in sent_items %}
+      <tr>
+        <td>
+          <a class="rowlink" href="/application/{{ a.id }}">{{ a.job_title or "(untitled)" }}</a>
+          {% if a.company %}<br><span class="muted" style="font-size:12px;">{{ a.company }}</span>{% endif %}
+        </td>
+        <td>
+          {% if a.email and "internal" not in a.email and "example.com" not in a.email %}
+            <span style="font-size:13px;">{{ a.email }}</span>
+          {% elif a.link %}
+            <a href="{{ a.link }}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:4px;" title="Open application portal">
+              {{ a.company or "Company Portal" }} ↗
+            </a>
+          {% else %}
+            <span class="muted" style="font-size:12px;">— (Web Portal)</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if a.disposition == "redirected" %}
+            <span class="badge" style="background:#352507; color:var(--yellow); border:1px solid #6b4d0e;" title="Sent safely to your test address in test mode">
+              Redirected (Test Mode)
+            </span>
+          {% elif a.disposition == "manual_applied" %}
+            <span class="badge" style="background:#18283a; color:var(--accent); border:1px solid #234261;">
+              Manual Portal
+            </span>
+          {% elif a.disposition == "sent" %}
+            <span class="badge" style="background:#064e3b; color:var(--green); border:1px solid #059669;">
+              Live Sent
+            </span>
+          {% else %}
+            <span class="badge">{{ a.disposition or a.status }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if a.ats_score %}
+            <span class="badge" style="font-weight:700; {% if a.ats_score >= 80 %}background:#064e3b; color:var(--green); border:1px solid #059669;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+              {{ "%.0f"|format(a.ats_score) }}
+            </span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td class="muted" style="font-size:12px;">
+          {{ (a.sent_at or a.updated_at or a.created_at).strftime("%Y-%m-%d %H:%M") }}
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <a class="btn secondary" href="/application/{{ a.id }}" style="margin:0; padding:5px 9px; font-size:12px;">View</a>
+            {% if a.link %}
+              <a class="btn secondary" href="{{ a.link }}" target="_blank" rel="noopener noreferrer" style="margin:0; padding:5px 9px; font-size:12px;" title="Open Job Portal Link">Link ↗</a>
+            {% endif %}
+            {% if a.resume_path %}
+              <a class="btn secondary" href="/application/{{ a.id }}/resume.pdf" target="_blank" style="margin:0; padding:5px 9px; font-size:12px;">PDF ↗</a>
+            {% endif %}
+            <form method="post" action="/application/{{ a.id }}/delete" style="display:inline; margin:0;">
+              <button type="button" style="background:transparent; border:1px solid #5a262e; border-radius:6px; color:#ff7a88; cursor:pointer; font-size:12px; padding:4px 7px;" title="Delete Application" data-title="{{ a.job_title }} at {{ a.company }}" onclick="confirmDelete(event, this.form, this.getAttribute('data-title'))">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:32px;">
+        No sent applications yet. Review an application from the <a href="/workspace">Workspace</a> and click <strong>Approve &amp; Send</strong> (or <strong>Mark as Applied</strong> for portal links).
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

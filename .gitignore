@@ -1,0 +1,25 @@
+# Secrets — NEVER commit
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Test / cache artifacts
+.pytest_cache/
+.mypy_cache/
+
+# Generated resume outputs & email outbox & databases
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.pdf
+
+# Local verification scripts (sandbox-only, not part of the app)
+verify_*.py
+

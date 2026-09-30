@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<!-- RESUME TEMPLATE — NOVA MINIMALIST
+     Scandinavian modern minimalism based on clean Source Sans 3 typography.
+     Crisp charcoal accents (#18181b), subtle hairline rules, refined whitespace.
+     Editable regions: SUMMARY, SKILLS, EXPERIENCE, PROJECTS, EDUCATION, CERTIFICATIONS, LINKS.
+     Locked regions: HEADER, CONTACT. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Minimalist Resume</title>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<style>
+  @font-face {
+    font-family: 'Source Sans 3'; font-style: normal; font-weight: 400;
+    src: url('{{FONT_DIR}}/SourceSans3-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Source Sans 3'; font-style: normal; font-weight: 600;
+    src: url('{{FONT_DIR}}/SourceSans3-SemiBold.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Source Sans 3'; font-style: normal; font-weight: 700;
+    src: url('{{FONT_DIR}}/SourceSans3-Bold.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Source Sans 3'; font-style: italic; font-weight: 400;
+    src: url('{{FONT_DIR}}/SourceSans3-Italic.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Source Sans 3'; font-style: italic; font-weight: 700;
+    src: url('{{FONT_DIR}}/SourceSans3-BoldItalic.ttf') format('truetype');
+  }
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #27272a;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #ffffff;
+    box-sizing: border-box;
+    padding: 16mm 10mm 14mm 10mm;
+    font-size: 10pt;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media screen {
+    html {
+      background: #0f1620;
+      padding: 20px 0;
+      margin: 0;
+    }
+    body {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 16mm 10mm 14mm 10mm;
+      font-size: 10pt;
+      line-height: 1.45;
+      box-shadow: 0 4px 28px rgba(0, 0, 0, 0.45);
+    }
+    .name { font-size: 26px; }
+    .title { font-size: 15px; }
+    .contact { font-size: 11px; }
+    h2 { font-size: 13px; margin: 9px 0 3px; }
+    .entry { margin-top: 5px; }
+    .proj { margin-top: 5px; }
+    li { margin: 2px 0; }
+  }
+  @media print {
+    html, body {
+      width: 210mm !important;
+      min-height: 297mm !important;
+      margin: 0 auto !important;
+      padding: 16mm 10mm 14mm 10mm !important;
+      background: #fff !important;
+      box-shadow: none !important;
+      font-size: 10pt !important;
+      line-height: 1.45 !important;
+    }
+  }
+  .header {
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+  }
+  .name {
+    font-size: 24px;
+    font-weight: 600;
+    color: #09090b;
+    letter-spacing: -0.02em;
+  }
+  .title {
+    font-size: 14px;
+    font-weight: 400;
+    color: #71717a;
+    margin-left: 8px;
+    letter-spacing: 0.01em;
+  }
+  .contact {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 4px;
+    font-size: 9.8pt;
+    color: #71717a;
+  }
+  .contact .item { display: inline-flex; align-items: center; }
+  .contact .ico { display: none; }
+  h2 {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #18181b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 8.5px 0 2.5px;
+    padding-bottom: 1.5px;
+    border-bottom: 1px solid #e4e4e7;
+  }
+  p.summary { margin-top: 2px; text-align: justify; }
+  .entry { display: flex; justify-content: space-between; margin-top: 4.5px; }
+  .entry:first-of-type { margin-top: 1.5px; }
+  .entry .left strong { font-weight: 600; color: #09090b; }
+  .entry .left em { font-style: normal; color: #71717a; font-weight: 400; }
+  .entry .right { text-align: right; color: #71717a; font-weight: 500; white-space: nowrap; padding-left: 10px; font-size: 9.2pt; }
+  .entry .sub-right { color: #a1a1aa; font-size: 8.8pt; font-weight: 400; }
+  ul { list-style: circle; padding-left: 15px; margin-top: 1.5px; }
+  li { margin: 1px 0; text-align: justify; }
+  .skills-list { list-style: circle; padding-left: 15px; margin-top: 2px; }
+  .skills-list li { margin: 1px 0; text-align: left; }
+  .skills-list strong { color: #18181b; font-weight: 600; }
+  .proj { margin-top: 4.5px; }
+  .proj:first-of-type { margin-top: 2px; }
+  .proj .head strong { font-weight: 600; color: #09090b; }
+  .proj .head em { font-style: normal; color: #71717a; font-weight: 400; }
+  .proj ul { margin-top: 1.5px; }
+  a.ext-link { text-decoration: none; color: inherit; }
+  svg.link-icon { width: 9px; height: 9px; fill: #71717a; margin-left: 2px; display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body data-template="nova_minimalist">
+
+  <!-- HEADER (LOCKED) -->
+  <div class="header">
+    <span class="name">Haseeb Ur Rahman</span><span class="title">AI &amp; Full-Stack Engineer</span>
+    <div class="contact">
+      <span class="item">+92 303 8607925</span>
+      <span class="item">mirzahaseeb0566@gmail.com</span>
+      <!--REGION:LINKS--><span class="item"><a href="https://www.linkedin.com/in/haseeb-ur-rahman-8b152234b" target="_blank" class="ext-link">LinkedIn</a></span>
+      <span class="item"><a href="https://github.com/mirza1272" target="_blank" class="ext-link">GitHub</a></span>
+      <span class="item"><a href="https://mirzahaseeb.me/" target="_blank" class="ext-link">Portfolio</a></span><!--END:LINKS-->
+    </div>
+  </div>
+
+  <!-- PROFILE (editable) -->
+  <h2>Summary</h2>
+  <p class="summary"><!--REGION:SUMMARY-->Computer Science student at FAST National University focused on Artificial Intelligence, Machine Learning, and Full-Stack Development. Experienced in developing real-world AI applications involving LLMs, RAG, and agentic workflows, coupled with modern web architectures. Focused on developing scalable, reliable, and impactful systems that solve real-world problems.<!--END:SUMMARY--></p>
+
+  <!-- EMPLOYMENT (editable) -->
+  <h2>Experience</h2>
+  <!--REGION:EXPERIENCE-->
+  <div class="entry">
+    <div class="left"><strong>ML Engineer</strong>, <em>CodeCelix</em></div>
+    <div class="right">Dec 2025 – Mar 2026</div>
+  </div>
+  <ul>
+    <li>Led a team of 5 members in developing end-to-end Machine Learning pipelines, covering data preprocessing, feature engineering, training, evaluation, and optimization.</li>
+    <li>Built and optimized reusable ML workflows using Python and Scikit-learn for real world datasets and predictive modeling.</li>
+  </ul>
+  <div class="entry">
+    <div class="left"><strong>AI / ML Engineer</strong>, <em>Broadstone Technologies</em> <svg class="link-icon" viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7h-4a5 5 0 1 0 0 10h4v-1.9h-4A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8v2zm5-6v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10h-4z"/></svg></div>
+    <div class="right">Jun 2026 – Aug 2026</div>
+  </div>
+  <ul>
+    <li>Developed FastAPI backend services for a cybersecurity product by handling data processing and AI-driven application workflows.</li>
+    <li>Designed and implemented a Knowledge Graph RAG pipeline for contextual retrieval, relationship based reasoning, and data analysis.</li>
+    <li>Built data processing pipelines to normalize and structure information from AWS, Azure, Slack, Zoom, Microsoft Teams, and Copilot into standardized JSON.</li>
+  </ul>
+  <!--END:EXPERIENCE-->
+
+  <!--REGION:EDUCATION-->
+  <h2>Education</h2>
+  <div class="entry">
+    <div class="left"><strong>Bachelor’s in Computer Science,</strong></div>
+    <div class="right">2023 – present</div>
+  </div>
+  <div class="entry" style="margin-top:0;">
+    <div class="left"><em>FAST National University of Computer and Emerging Sciences</em></div>
+    <div class="sub-right">Pakistan</div>
+  </div>
+  <!--END:EDUCATION-->
+
+  <!-- SKILLS (editable) -->
+  <h2>Skills</h2>
+  <ul class="skills-list"><!--REGION:SKILLS-->
+    <li><strong>Programming</strong> — Python, SQL, JavaScript, C++</li>
+    <li><strong>AI/ML</strong> — Machine Learning, Deep Learning, RAG, LLMs, Agentic AI</li>
+    <li><strong>Libraries/Frameworks</strong> — FastAPI, Scikit-learn, NumPy, Pandas, Matplotlib, Seaborn, React.js</li>
+    <li><strong>Backend</strong> — REST APIs, Pydantic</li>
+    <li><strong>AI Tools &amp; APIs</strong> — Groq, Google Gemini, Vapi</li>
+    <li><strong>Databases</strong> — MongoDB, ChromaDB, FalkorDB, Supabase</li>
+    <li><strong>Tools</strong> — Vercel, Git, GitHub</li>
+  <!--END:SKILLS--></ul>
+
+  <!-- PROJECTS (editable) -->
+  <h2>Projects</h2>
+  <!--REGION:PROJECTS-->
+  <div class="proj">
+    <div class="head"><strong><a href="https://github.com/mirza1272/Nemetron" target="_blank" style="text-decoration:none;color:inherit;">Nemetron</a></strong> <a href="https://github.com/mirza1272/Nemetron" target="_blank" style="text-decoration:none;color:#71717a;"><svg class="link-icon" viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7h-4a5 5 0 1 0 0 10h4v-1.9h-4A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8v2zm5-6v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10h-4z"/></svg></a>, <em>Agentic AI Knowledge &amp; Retrieval System</em></div>
+    <ul><li>Built an Agentic AI system that combines LLMs with RAG and vector search to retrieve relevant information and provide context aware responses. Developed the system using Python, integrating AI agents, document processing, embeddings, and retrieval workflows to improve the accuracy and relevance of generated responses.</li></ul>
+  </div>
+  <div class="proj">
+    <div class="head"><strong><a href="https://github.com/mirza1272/Signal-Reach" target="_blank" style="text-decoration:none;color:inherit;">Signal Reach</a></strong> <a href="https://github.com/mirza1272/Signal-Reach" target="_blank" style="text-decoration:none;color:#71717a;"><svg class="link-icon" viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7h-4a5 5 0 1 0 0 10h4v-1.9h-4A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8v2zm5-6v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10h-4z"/></svg></a>, <em>Agentic AI Lead Generation Platform</em></div>
+    <ul><li>Developed an Agentic AI lead generation platform that automates prospect research, data collection, and lead qualification. Built AI agents with Python and FastAPI to handle research workflows, process business information, and generate relevant leads through automated multi-step tasks.</li></ul>
+  </div>
+  <!--END:PROJECTS-->
+
+  <!-- CERTIFICATIONS (editable) -->
+  <!--REGION:CERTIFICATIONS--><!--END:CERTIFICATIONS-->
+
+</body>
+</html>

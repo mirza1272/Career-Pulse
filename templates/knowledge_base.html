@@ -1,0 +1,850 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .kb-personal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .kb-links-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .exp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .proj-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .edu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .modal-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .exp-grid, .proj-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+    .kb-links-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .kb-personal-grid, .edu-grid, .cert-grid, .modal-grid-2 {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+    .exp-item, .proj-item, .edu-item, .cert-item {
+      padding: 12px 10px !important;
+    }
+  }
+</style>
+<div style="max-width: 1000px; margin: 0 auto; padding-bottom: 60px;">
+  <!-- PAGE HEADER -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+    <div>
+      <h1 style="font-size:24px; font-weight:700; color:var(--text); margin:0; letter-spacing:-0.02em;">Knowledge Base</h1>
+    </div>
+  </div>
+
+  {% if saved %}
+  <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; display:flex; gap:12px; align-items:center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <div style="font-size:14px; font-weight:500; color:#34d399;">
+      Knowledge base profile updated successfully. Future applications will reflect your latest data.
+    </div>
+  </div>
+  {% endif %}
+
+  {% if imported %}
+  <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; font-size:14px; color:#34d399;">
+    <strong>Resume parsed.</strong> Review your details below and click Save.
+  </div>
+  {% endif %}
+
+  {% if import_fallback %}
+  <div style="background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; font-size:14px; color:#fbbf24;">
+    <strong>Automatic structuring is unavailable right now.</strong> The extracted resume text is in the Summary box below — copy the details into the right fields, then save.
+  </div>
+  {% endif %}
+
+  {% if import_error %}
+  <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; font-size:14px; color:#f87171;">
+    <strong>Could not parse the uploaded file:</strong> {{ import_error }}
+  </div>
+  {% endif %}
+
+  <!-- RESUME IMPORT (PDF / DOCX / TXT) -->
+  <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 24px; margin-bottom:24px;">
+    <h2 style="font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px;">Import Resume</h2>
+    <form method="POST" action="/knowledge-base/import" enctype="multipart/form-data" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;" onsubmit="window.showActionOverlay && window.showActionOverlay('Analyzing Resume', 'Extracting technical skills, experience, projects & education...', ['[1/2] Reading document structure...', '[2/2] Extracting facts & skills...']);">
+      <input type="file" name="resume_pdf" accept=".pdf,.docx,.doc,.txt,.rtf,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required style="font-size:13px; color:var(--text);" />
+      <button type="submit" style="background:var(--accent); color:#0e1015; border:none; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer;">Parse Resume</button>
+    </form>
+  </div>
+
+  <form method="POST" action="/knowledge-base" id="kbForm">
+    <!-- SECTION 1: IDENTITY & CONTACT LINKS -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <h2 style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:18px;">Personal Information</h2>
+
+      <div class="kb-personal-grid">
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Full Name</label>
+          <input type="text" name="name" value="{{ kb_data.get('name') or current_user.name }}" placeholder="e.g. Haseeb Ur Rahman"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Contact Email</label>
+          <input type="email" name="email" value="{{ kb_data.get('email') or current_user.email }}" placeholder="you@example.com"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Phone Number</label>
+          <input type="text" name="phone" value="{{ kb_data.get('phone') or '' }}" placeholder="+92 300 1234567"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;">Location (City, Country)</label>
+          <input type="text" name="location" value="{{ kb_data.get('location') or '' }}" placeholder="e.g. Lahore, Pakistan"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--line); padding-top:16px; margin-top:8px;">
+        <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:12px;">Profile Web Links</label>
+        <div class="kb-links-grid">
+          <div>
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">LinkedIn URL</span>
+            <input type="url" name="linkedin" value="{{ (kb_data.get('links') or {}).get('linkedin') or '' }}" placeholder="https://linkedin.com/in/..."
+              style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:12px; outline:none; font-family:monospace;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+          </div>
+          <div>
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">GitHub URL</span>
+            <input type="url" name="github" value="{{ (kb_data.get('links') or {}).get('github') or '' }}" placeholder="https://github.com/..."
+              style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:12px; outline:none; font-family:monospace;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+          </div>
+          <div>
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">Portfolio / Website</span>
+            <input type="url" name="portfolio" value="{{ (kb_data.get('links') or {}).get('portfolio') or '' }}" placeholder="https://..."
+              style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:12px; outline:none; font-family:monospace;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: PROFESSIONAL SUMMARY -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <h2 style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:14px;">Professional Summary</h2>
+      <textarea name="summary" rows="3" placeholder="AI/ML Engineer specializing in Agentic AI, RAG pipelines, FastAPI, and Deep Learning..."
+        style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; line-height:1.5; resize:vertical;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">{{ kb_data.get('summary') or '' }}</textarea>
+    </div>
+
+    <!-- SECTION 3: SKILLS INVENTORY -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h2 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Skills</h2>
+        {% set skill_len = (kb_data.get('skills') or [])|length %}
+        <span style="font-size:12px; color:var(--muted);">Total: {{ skill_len }} skills</span>
+      </div>
+      {% set skills_list = kb_data.get('skills') or [] %}
+      <textarea name="skills_csv" rows="3" placeholder="Python, FastAPI, PyTorch, TensorFlow, Machine Learning, Deep Learning, RAG, LLMs, Agentic AI, React.js, SQL, Docker..."
+        style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; line-height:1.5; resize:vertical; font-family:monospace;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">{{ skills_list|join(', ') if skills_list is iterable and skills_list is not string else skills_list }}</textarea>
+    </div>
+
+    <!-- SECTION 4: WORK EXPERIENCE -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Work Experience</h2>
+        <button type="button" onclick="openExpModal()"
+          style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.3); color:#10b981; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+          + Add Experience
+        </button>
+      </div>
+
+      <div id="experienceContainer" style="display:flex; flex-direction:column; gap:16px;">
+        {% set experiences = kb_data.get('experience') or [] %}
+        {% for exp in experiences %}
+        <div class="exp-item" style="background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text);">Role #<span class="exp-idx">{{ loop.index }}</span></span>
+            <button type="button" onclick="this.closest('.exp-item').remove(); updateExpIndices();"
+              style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+          </div>
+          <div class="exp-grid">
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Employer / Company</span>
+              <input type="text" class="exp-employer" value="{{ exp.get('employer') or exp.get('company') or '' }}" placeholder="Company Name"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Job Title</span>
+              <input type="text" class="exp-title" value="{{ exp.get('title') or '' }}" placeholder="e.g. ML Engineer"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Dates (Start – End)</span>
+              <div style="display:flex; gap:6px;">
+                <input type="text" class="exp-start" value="{{ exp.get('start') or '' }}" placeholder="YYYY-MM"
+                  style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+                <input type="text" class="exp-end" value="{{ exp.get('end') or '' }}" placeholder="Present or YYYY-MM"
+                  style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Key Achievements & Responsibilities (one bullet per line)</span>
+            {% set bullets = exp.get('bullets') or [] %}
+            <textarea class="exp-bullets" rows="2" placeholder="Led a team of 5 in developing ML pipelines...&#10;Built reusable Scikit-learn workflows..."
+              style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; line-height:1.4;">{{ bullets|join('\n') if bullets is iterable and bullets is not string else bullets }}</textarea>
+          </div>
+          <div>
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Skills Used (comma-separated)</span>
+            {% set sk_used = exp.get('skills_used') or [] %}
+            <input type="text" class="exp-skills" value="{{ sk_used|join(', ') if sk_used is iterable and sk_used is not string else sk_used }}" placeholder="Python, Scikit-learn, Docker..."
+              style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="experience_json" id="experienceJson">
+    </div>
+
+    <!-- SECTION 5: PROJECTS LIBRARY -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:30px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Projects</h2>
+        <button type="button" onclick="openProjModal()"
+          style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.3); color:#10b981; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+          + Add Project
+        </button>
+      </div>
+
+      <div id="projectsContainer" style="display:flex; flex-direction:column; gap:16px;">
+        {% set projects = kb_data.get('projects') or [] %}
+        {% for p in projects %}
+        <div class="proj-item" style="background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text);">Project #<span class="proj-idx">{{ loop.index }}</span></span>
+            <button type="button" onclick="this.closest('.proj-item').remove(); updateProjIndices();"
+              style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+          </div>
+          <div class="proj-grid">
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Project Name</span>
+              <input type="text" class="proj-name" value="{{ p.get('name') or '' }}" placeholder="e.g. Nemetron"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Subtitle / Tagline</span>
+              <input type="text" class="proj-subtitle" value="{{ p.get('subtitle') or '' }}" placeholder="e.g. Agentic AI Knowledge System"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Live Link / Repository</span>
+              <input type="url" class="proj-link" value="{{ p.get('link') or '' }}" placeholder="https://..."
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; font-family:monospace;">
+            </div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Description & Impact</span>
+            <textarea class="proj-desc" rows="2" placeholder="Built an Agentic AI system that combines LLMs with RAG and vector search..."
+              style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; line-height:1.4;">{{ p.get('description') or p.get('bullet') or '' }}</textarea>
+          </div>
+          <div>
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Technologies / Skills Used (comma-separated)</span>
+            {% set p_skills = p.get('skills') or [] %}
+            <input type="text" class="proj-skills" value="{{ p_skills|join(', ') if p_skills is iterable and p_skills is not string else p_skills }}" placeholder="Python, FastAPI, RAG, ChromaDB..."
+              style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="projects_json" id="projectsJson">
+    </div>
+
+    <!-- SECTION 6: EDUCATION -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Education</h2>
+        <button type="button" onclick="addEduCard()"
+          style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.3); color:#10b981; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+          + Add Education
+        </button>
+      </div>
+
+      <div id="educationContainer" style="display:flex; flex-direction:column; gap:16px;">
+        {% set educations = kb_data.get('education') or [] %}
+        {% for edu in educations %}
+        <div class="edu-item" style="background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text);">Education #<span class="edu-idx">{{ loop.index }}</span></span>
+            <button type="button" onclick="this.closest('.edu-item').remove(); updateEduIndices();"
+              style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+          </div>
+          <div class="edu-grid">
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Institution</span>
+              <input type="text" class="edu-institution" value="{{ edu.get('institution') or '' }}" placeholder="e.g. FAST National University"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Degree</span>
+              <input type="text" class="edu-degree" value="{{ edu.get('degree') or '' }}" placeholder="e.g. Bachelor's in Computer Science"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Field (optional)</span>
+              <input type="text" class="edu-field" value="{{ edu.get('field') or '' }}" placeholder="e.g. Computer Science"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Dates (Start – End)</span>
+              <div style="display:flex; gap:6px;">
+                <input type="text" class="edu-start" value="{{ edu.get('start') or '' }}" placeholder="YYYY"
+                  style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+                <input type="text" class="edu-end" value="{{ edu.get('end') or edu.get('graduation_date') or '' }}" placeholder="Present or YYYY"
+                  style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="education_json" id="educationJson">
+    </div>
+
+    <!-- SECTION 7: CERTIFICATIONS -->
+    <div class="card" style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Certifications</h2>
+        <button type="button" onclick="addCertCard()"
+          style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.3); color:#10b981; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+          + Add Certification
+        </button>
+      </div>
+
+      <div id="certificationsContainer" style="display:flex; flex-direction:column; gap:16px;">
+        {% set certs = kb_data.get('certifications') or [] %}
+        {% for cert in certs %}
+        {% if cert is mapping %}
+          {% set cname = cert.get('name') or '' %}
+          {% set corg = cert.get('organization') or '' %}
+          {% set clink = cert.get('link') or '' %}
+        {% else %}
+          {% set cname = cert %}
+          {% set corg = '' %}
+          {% set clink = '' %}
+        {% endif %}
+        <div class="cert-item" style="background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text);">Certification #<span class="cert-idx">{{ loop.index }}</span></span>
+            <button type="button" onclick="this.closest('.cert-item').remove(); updateCertIndices();"
+              style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+          </div>
+          <div class="cert-grid">
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Certificate Name</span>
+              <input type="text" class="cert-name" value="{{ cname }}" placeholder="e.g. AWS Certified Machine Learning – Specialty"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+            <div>
+              <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Organization</span>
+              <input type="text" class="cert-org" value="{{ corg }}" placeholder="e.g. Amazon Web Services"
+                style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Credential Link (optional)</span>
+            <input type="url" class="cert-link" value="{{ clink }}" placeholder="https://..."
+              style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; font-family:monospace;">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="certifications_json" id="certificationsJson">
+    </div>
+
+    <!-- SUBMIT FOOTER -->
+    <div style="display:flex; justify-content:flex-end; align-items:center; padding:18px 24px; background:var(--panel); border:1px solid var(--line); border-radius:12px;">
+      <button type="submit"
+        style="background:var(--accent); border:none; color:#0e1015; padding:11px 32px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        Save Knowledge Base
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- ===================== ADD EXPERIENCE MODAL ===================== -->
+<div id="expModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:580px; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden;">
+    <div style="padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Add Work Experience</h3>
+      <button type="button" onclick="closeExpModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <div style="padding:22px; display:flex; flex-direction:column; gap:14px;">
+      <div class="modal-grid-2">
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Employer / Company *</label>
+          <input id="m_exp_employer" type="text" placeholder="Company Name"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Job Title *</label>
+          <input id="m_exp_title" type="text" placeholder="e.g. ML Engineer"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+      </div>
+      <div class="modal-grid-2">
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Start Date (YYYY-MM)</label>
+          <input id="m_exp_start" type="text" placeholder="2023-06"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">End Date</label>
+          <input id="m_exp_end" type="text" placeholder="Present or 2024-06"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+      </div>
+      <div>
+        <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Key Achievements &amp; Responsibilities <span style="font-weight:400;">(one per line)</span></label>
+        <textarea id="m_exp_bullets" rows="3" placeholder="Led a team of 5 engineers building ML pipelines...&#10;Reduced model inference latency by 40%..."
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; resize:vertical; box-sizing:border-box; line-height:1.5;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'"></textarea>
+      </div>
+      <div>
+        <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Skills Used <span style="font-weight:400;">(comma-separated)</span></label>
+        <input id="m_exp_skills" type="text" placeholder="Python, Scikit-learn, Docker, FastAPI..."
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+      </div>
+      <div id="expModalError" style="display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:8px 12px; color:#fca5a5; font-size:12px;"></div>
+    </div>
+    <div style="padding:14px 22px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;">
+      <button type="button" onclick="closeExpModal()" class="btn secondary" style="margin:0; padding:9px 18px; font-size:13px;">Cancel</button>
+      <button type="button" onclick="saveExpModal()" class="btn" style="margin:0; padding:9px 22px; font-size:13px; font-weight:700; background:var(--accent); color:#0e1015; border:none;">Add to List</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADD PROJECT MODAL ===================== -->
+<div id="projModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:580px; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden;">
+    <div style="padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Add Project</h3>
+      <button type="button" onclick="closeProjModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <div style="padding:22px; display:flex; flex-direction:column; gap:14px;">
+      <div class="modal-grid-2">
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Project Name *</label>
+          <input id="m_proj_name" type="text" placeholder="e.g. Nemetron"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Subtitle / Tagline</label>
+          <input id="m_proj_subtitle" type="text" placeholder="e.g. Agentic AI Knowledge System"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+      </div>
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Project Name *</label>
+          <input id="m_proj_name" type="text" placeholder="e.g. Nemetron"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Subtitle / Tagline</label>
+          <input id="m_proj_subtitle" type="text" placeholder="e.g. Agentic AI Knowledge System"
+            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+      </div>
+      <div>
+        <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Live Link / Repository</label>
+        <input id="m_proj_link" type="url" placeholder="https://github.com/..."
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box; font-family:monospace;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+      </div>
+      <div>
+        <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Description &amp; Impact</label>
+        <textarea id="m_proj_desc" rows="3" placeholder="Built an Agentic AI system that combines LLMs with RAG and vector search to deliver context-aware responses..."
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; resize:vertical; box-sizing:border-box; line-height:1.5;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'"></textarea>
+      </div>
+      <div>
+        <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Technologies / Skills Used <span style="font-weight:400;">(comma-separated)</span></label>
+        <input id="m_proj_skills" type="text" placeholder="Python, FastAPI, RAG, ChromaDB, LangChain..."
+          style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
+      </div>
+      <div id="projModalError" style="display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:8px 12px; color:#fca5a5; font-size:12px;"></div>
+    </div>
+    <div style="padding:14px 22px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;">
+      <button type="button" onclick="closeProjModal()" class="btn secondary" style="margin:0; padding:9px 18px; font-size:13px;">Cancel</button>
+      <button type="button" onclick="saveProjModal()" class="btn" style="margin:0; padding:9px 22px; font-size:13px; font-weight:700; background:var(--accent); color:#0e1015; border:none;">Add to List</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateExpIndices() {
+  document.querySelectorAll('#experienceContainer .exp-item').forEach((item, idx) => {
+    const el = item.querySelector('.exp-idx');
+    if (el) el.textContent = idx + 1;
+  });
+}
+
+function updateProjIndices() {
+  document.querySelectorAll('#projectsContainer .proj-item').forEach((item, idx) => {
+    const el = item.querySelector('.proj-idx');
+    if (el) el.textContent = idx + 1;
+  });
+}
+
+function updateEduIndices() {
+  document.querySelectorAll('#educationContainer .edu-item').forEach((item, idx) => {
+    const el = item.querySelector('.edu-idx');
+    if (el) el.textContent = idx + 1;
+  });
+}
+
+function addEduCard() {
+  const container = document.getElementById('educationContainer');
+  const count = container.querySelectorAll('.edu-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'edu-item';
+  div.style.cssText = 'background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;';
+  div.innerHTML =
+    '<div style="display:flex; justify-content:space-between; margin-bottom:12px;">' +
+      '<span style="font-size:13px; font-weight:700; color:var(--text);">Education #<span class="edu-idx">' + count + '</span></span>' +
+      '<button type="button" onclick="this.closest(\'.edu-item\').remove(); updateEduIndices();"' +
+        ' style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>' +
+    '</div>' +
+    '<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">' +
+      '<div><span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Institution</span>' +
+        '<input type="text" class="edu-institution" placeholder="e.g. FAST National University"' +
+        ' style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;"></div>' +
+      '<div><span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Degree</span>' +
+        '<input type="text" class="edu-degree" placeholder="e.g. Bachelor\'s in Computer Science"' +
+        ' style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;"></div>' +
+      '<div><span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Field (optional)</span>' +
+        '<input type="text" class="edu-field" placeholder="e.g. Computer Science"' +
+        ' style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;"></div>' +
+      '<div><span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Dates (Start – End)</span>' +
+        '<div style="display:flex; gap:6px;">' +
+          '<input type="text" class="edu-start" placeholder="YYYY"' +
+          ' style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">' +
+          '<input type="text" class="edu-end" placeholder="Present or YYYY"' +
+          ' style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">' +
+        '</div></div>' +
+    '</div>';
+  container.appendChild(div);
+}
+
+/* -------- EXPERIENCE MODAL -------- */
+function openExpModal() {
+  ['m_exp_employer','m_exp_title','m_exp_start','m_exp_end','m_exp_bullets','m_exp_skills'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('expModalError').style.display = 'none';
+  document.getElementById('expModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('m_exp_employer').focus(), 80);
+}
+
+function closeExpModal() {
+  document.getElementById('expModal').style.display = 'none';
+}
+
+function saveExpModal() {
+  const employer = document.getElementById('m_exp_employer').value.trim();
+  const title    = document.getElementById('m_exp_title').value.trim();
+  const errEl    = document.getElementById('expModalError');
+
+  if (!employer && !title) {
+    errEl.textContent = 'Please enter at least Employer or Job Title.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const start      = document.getElementById('m_exp_start').value.trim();
+  const end        = document.getElementById('m_exp_end').value.trim();
+  const bulletsRaw = document.getElementById('m_exp_bullets').value;
+  const skillsRaw  = document.getElementById('m_exp_skills').value;
+
+  const container = document.getElementById('experienceContainer');
+  const count = container.querySelectorAll('.exp-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'exp-item';
+  div.style.cssText = 'background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;';
+  div.innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+      <span style="font-size:13px; font-weight:700; color:var(--text);">Role #<span class="exp-idx">${count}</span></span>
+      <button type="button" onclick="this.closest('.exp-item').remove(); updateExpIndices();"
+        style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:10px;">
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Employer / Company</span>
+        <input type="text" class="exp-employer" value="${employer.replace(/"/g,'&quot;')}" placeholder="Company Name"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Job Title</span>
+        <input type="text" class="exp-title" value="${title.replace(/"/g,'&quot;')}" placeholder="e.g. ML Engineer"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Dates (Start – End)</span>
+        <div style="display:flex; gap:6px;">
+          <input type="text" class="exp-start" value="${start}" placeholder="YYYY-MM"
+            style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+          <input type="text" class="exp-end" value="${end}" placeholder="Present or YYYY-MM"
+            style="width:50%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 8px; color:var(--text); font-size:12px; outline:none;">
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Key Achievements &amp; Responsibilities (one bullet per line)</span>
+      <textarea class="exp-bullets" rows="2"
+        style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; line-height:1.4;">${bulletsRaw.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>
+    <div>
+      <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Skills Used (comma-separated)</span>
+      <input type="text" class="exp-skills" value="${skillsRaw.replace(/"/g,'&quot;')}" placeholder="Python, Scikit-learn, Docker..."
+        style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+    </div>
+  `;
+  container.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  closeExpModal();
+}
+
+/* -------- PROJECT MODAL -------- */
+function openProjModal() {
+  ['m_proj_name','m_proj_subtitle','m_proj_link','m_proj_desc','m_proj_skills'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('projModalError').style.display = 'none';
+  document.getElementById('projModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('m_proj_name').focus(), 80);
+}
+
+function closeProjModal() {
+  document.getElementById('projModal').style.display = 'none';
+}
+
+function saveProjModal() {
+  const name  = document.getElementById('m_proj_name').value.trim();
+  const errEl = document.getElementById('projModalError');
+
+  if (!name) {
+    errEl.textContent = 'Project Name is required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const subtitle   = document.getElementById('m_proj_subtitle').value.trim();
+  const link       = document.getElementById('m_proj_link').value.trim();
+  const desc       = document.getElementById('m_proj_desc').value.trim();
+  const skillsRaw  = document.getElementById('m_proj_skills').value;
+
+  const container = document.getElementById('projectsContainer');
+  const count = container.querySelectorAll('.proj-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'proj-item';
+  div.style.cssText = 'background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px;';
+  div.innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+      <span style="font-size:13px; font-weight:700; color:var(--text);">Project #<span class="proj-idx">${count}</span></span>
+      <button type="button" onclick="this.closest('.proj-item').remove(); updateProjIndices();"
+        style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:10px;">
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Project Name</span>
+        <input type="text" class="proj-name" value="${name.replace(/"/g,'&quot;')}" placeholder="e.g. Nemetron"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Subtitle / Tagline</span>
+        <input type="text" class="proj-subtitle" value="${subtitle.replace(/"/g,'&quot;')}" placeholder="e.g. Agentic AI Knowledge System"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Live Link / Repository</span>
+        <input type="url" class="proj-link" value="${link.replace(/"/g,'&quot;')}" placeholder="https://..."
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; font-family:monospace;">
+      </div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Description &amp; Impact</span>
+      <textarea class="proj-desc" rows="2"
+        style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; line-height:1.4;">${desc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>
+    <div>
+      <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Technologies / Skills Used (comma-separated)</span>
+      <input type="text" class="proj-skills" value="${skillsRaw.replace(/"/g,'&quot;')}" placeholder="Python, FastAPI, RAG, ChromaDB..."
+        style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+    </div>
+  `;
+  container.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  closeProjModal();
+}
+
+// ---- Certifications: dynamic cards ----
+function updateCertIndices() {
+  document.querySelectorAll('#certificationsContainer .cert-item .cert-idx').forEach((el, i) => {
+    el.textContent = i + 1;
+  });
+}
+
+function addCertCard() {
+  const container = document.getElementById('certificationsContainer');
+  const count = container.querySelectorAll('.cert-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'cert-item';
+  div.style.cssText = 'background:var(--bg-input); border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;';
+  div.innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+      <span style="font-size:13px; font-weight:700; color:var(--text);">Certification #<span class="cert-idx">${count}</span></span>
+      <button type="button" onclick="this.closest('.cert-item').remove(); updateCertIndices();"
+        style="background:transparent; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:600;">Remove</button>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Certificate Name</span>
+        <input type="text" class="cert-name" value="" placeholder="e.g. AWS Certified Machine Learning – Specialty"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+      <div>
+        <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Organization</span>
+        <input type="text" class="cert-org" value="" placeholder="e.g. Amazon Web Services"
+          style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none;">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <span style="display:block; font-size:11px; color:var(--muted); margin-bottom:3px;">Credential Link (optional)</span>
+      <input type="url" class="cert-link" value="" placeholder="https://..."
+        style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:var(--text); font-size:12px; outline:none; font-family:monospace;">
+    </div>
+  `;
+  container.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => { const i = div.querySelector('.cert-name'); if (i) i.focus(); }, 80);
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeExpModal();
+    closeProjModal();
+  }
+});
+
+// Serialize dynamic rows before submit
+document.getElementById('kbForm').addEventListener('submit', function(e) {
+  // 1. Experiences
+  const exps = [];
+  document.querySelectorAll('#experienceContainer .exp-item').forEach(item => {
+    const employer = item.querySelector('.exp-employer').value.trim();
+    const title = item.querySelector('.exp-title').value.trim();
+    const start = item.querySelector('.exp-start').value.trim();
+    const end = item.querySelector('.exp-end').value.trim();
+    const bulletsRaw = item.querySelector('.exp-bullets').value;
+    const bullets = bulletsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+    const skillsRaw = item.querySelector('.exp-skills').value;
+    const skills_used = skillsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (employer || title) {
+      exps.push({ employer, title, start, end, bullets, skills_used });
+    }
+  });
+  document.getElementById('experienceJson').value = JSON.stringify(exps);
+
+  // 2. Projects
+  const projs = [];
+  document.querySelectorAll('#projectsContainer .proj-item').forEach(item => {
+    const name = item.querySelector('.proj-name').value.trim();
+    const subtitle = item.querySelector('.proj-subtitle').value.trim();
+    const link = item.querySelector('.proj-link').value.trim();
+    const description = item.querySelector('.proj-desc').value.trim();
+    const skillsRaw = item.querySelector('.proj-skills').value;
+    const skills = skillsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (name) {
+      projs.push({ name, short_name: name, subtitle, description, bullet: description, link, skills });
+    }
+  });
+  document.getElementById('projectsJson').value = JSON.stringify(projs);
+
+  // 3. Education
+  const eduList = [];
+  document.querySelectorAll('#educationContainer .edu-item').forEach(item => {
+    const institution = item.querySelector('.edu-institution').value.trim();
+    const degree = item.querySelector('.edu-degree').value.trim();
+    const field = item.querySelector('.edu-field').value.trim();
+    const start = item.querySelector('.edu-start').value.trim();
+    const end = item.querySelector('.edu-end').value.trim();
+
+    if (institution || degree) {
+      eduList.push({ institution, degree, field, start, end });
+    }
+  });
+  document.getElementById('educationJson').value = JSON.stringify(eduList);
+
+  // 4. Certifications
+  const certList = [];
+  document.querySelectorAll('#certificationsContainer .cert-item').forEach(item => {
+    const name = item.querySelector('.cert-name').value.trim();
+    const organization = item.querySelector('.cert-org').value.trim();
+    const link = item.querySelector('.cert-link').value.trim();
+
+    if (name) {
+      certList.push({ name, organization, link });
+    }
+  });
+  document.getElementById('certificationsJson').value = JSON.stringify(certList);
+});
+</script>
+{% endblock %}
+
+

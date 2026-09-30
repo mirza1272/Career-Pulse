@@ -1,0 +1,232 @@
+# Radar Search Targets & Platform Catalog
+# Default Role: Junior Developer (AI / Full-Stack / ASE)
+# Default Location: Worldwide Remote + Onsite in Lahore, Islamabad, Faisalabad
+
+default_role: "Junior Developer (AI / Full-Stack / ASE)"
+default_location: "worldwide_remote_or_pakistan_onsite"
+default_experience: "junior"
+
+# 30 Curated Roles heavily focused on AI/ML and Full-Stack
+roles:
+  ai_machine_learning:
+    - id: "junior_dev_ai_fullstack_ase"
+      name: "Junior Developer (AI / Full-Stack / ASE)"
+      keywords: ["junior developer", "associate software engineer", "ai engineer", "full stack", "python", "pytorch", "react"]
+    - id: "junior_ml_engineer"
+      name: "Junior Machine Learning Engineer"
+      keywords: ["machine learning", "deep learning", "pytorch", "tensorflow", "scikit-learn", "python"]
+    - id: "associate_ai_engineer"
+      name: "Associate AI Engineer"
+      keywords: ["ai engineer", "llm", "generative ai", "langchain", "prompt engineering", "openai"]
+    - id: "junior_deep_learning_engineer"
+      name: "Junior Deep Learning Engineer"
+      keywords: ["deep learning", "neural networks", "cnn", "rnn", "transformers", "pytorch"]
+    - id: "junior_computer_vision_engineer"
+      name: "Junior Computer Vision Engineer"
+      keywords: ["computer vision", "opencv", "yolo", "image processing", "object detection"]
+    - id: "junior_nlp_llm_engineer"
+      name: "Junior NLP / LLM Engineer"
+      keywords: ["nlp", "natural language processing", "llm", "huggingface", "vector db", "rag"]
+    - id: "genai_agentic_workflow_developer"
+      name: "Generative AI & Agentic Workflow Developer"
+      keywords: ["agentic", "ai agents", "langgraph", "crewai", "autogen", "generative ai"]
+    - id: "junior_mlops_engineer"
+      name: "Junior MLOps Engineer"
+      keywords: ["mlops", "model deployment", "docker", "kubeflow", "mlflow", "fastapi"]
+    - id: "associate_data_scientist"
+      name: "Associate Data Scientist"
+      keywords: ["data scientist", "pandas", "numpy", "statistics", "predictive modeling", "eda"]
+    - id: "junior_ai_research_engineer"
+      name: "Junior AI Research Engineer"
+      keywords: ["ai research", "algorithm development", "machine learning research", "papers"]
+    - id: "junior_pytorch_python_developer"
+      name: "Junior PyTorch / Python AI Developer"
+      keywords: ["pytorch", "python", "model training", "cuda", "tensors"]
+    - id: "ai_prompt_systems_engineer"
+      name: "AI Prompt & Systems Engineer"
+      keywords: ["prompt engineer", "evals", "system prompts", "few shot", "ai workflows"]
+    - id: "junior_data_ml_pipeline_engineer"
+      name: "Junior Data / ML Pipeline Engineer"
+      keywords: ["data pipeline", "etl", "feature engineering", "airflow", "sql"]
+    - id: "applied_ai_developer_entry"
+      name: "Applied AI Developer (Entry-Level)"
+      keywords: ["applied ai", "ai integration", "api integration", "openai api", "anthropic"]
+    - id: "junior_ai_automation_engineer"
+      name: "Junior AI Automation Engineer"
+      keywords: ["ai automation", "workflow automation", "rpa", "zapier", "make", "python"]
+
+  fullstack_web:
+    - id: "junior_fullstack_developer"
+      name: "Junior Full-Stack Developer"
+      keywords: ["full stack", "frontend", "backend", "javascript", "python", "database"]
+    - id: "fullstack_python_react_developer"
+      name: "Full-Stack Python / React Developer"
+      keywords: ["react", "python", "fastapi", "django", "postgresql", "rest api"]
+    - id: "fullstack_typescript_nextjs_developer"
+      name: "Full-Stack TypeScript / Next.js Developer"
+      keywords: ["next.js", "react", "typescript", "tailwind", "node.js", "prisma"]
+    - id: "junior_mern_pern_stack_developer"
+      name: "Junior MERN / PERN Stack Developer"
+      keywords: ["mongodb", "express", "react", "node.js", "postgresql"]
+    - id: "associate_frontend_developer"
+      name: "Associate Frontend Developer (React / Next.js)"
+      keywords: ["frontend developer", "react", "next.js", "ui/ux", "css", "html"]
+    - id: "junior_backend_developer_python"
+      name: "Junior Backend Developer (Python / FastAPI / Django)"
+      keywords: ["python backend", "fastapi", "django", "sql", "orm", "rest api"]
+    - id: "junior_backend_developer_nodejs"
+      name: "Junior Backend Developer (Node.js / Express)"
+      keywords: ["node.js", "express", "javascript", "backend", "apis"]
+    - id: "junior_backend_developer_golang"
+      name: "Junior Backend Developer (Go / Golang)"
+      keywords: ["golang", "go developer", "concurrency", "microservices", "backend"]
+    - id: "junior_web_application_developer"
+      name: "Junior Web Application Developer"
+      keywords: ["web application", "software developer", "full stack", "html5", "css3"]
+    - id: "junior_rest_graphql_api_developer"
+      name: "Junior REST / GraphQL API Developer"
+      keywords: ["rest api", "graphql", "api development", "postman", "swagger"]
+
+  core_software_cloud:
+    - id: "associate_software_engineer_ase"
+      name: "Associate Software Engineer (ASE 0-2 YOE)"
+      keywords: ["associate software engineer", "ase", "entry level software engineer", "git", "oop"]
+    - id: "junior_cloud_devops_engineer"
+      name: "Junior Cloud & DevOps Engineer"
+      keywords: ["devops", "cloud", "aws", "docker", "ci/cd", "linux"]
+    - id: "junior_data_engineer"
+      name: "Junior Data Engineer (SQL / Python / ETL)"
+      keywords: ["data engineer", "sql", "etl", "data warehouse", "postgresql"]
+    - id: "junior_qa_automation_engineer"
+      name: "Junior QA / Automation Test Engineer"
+      keywords: ["qa engineer", "automation testing", "selenium", "pytest", "cypress"]
+    - id: "junior_system_software_developer"
+      name: "Junior System Software Developer"
+      keywords: ["system software", "c++", "python", "linux", "networking"]
+
+# 100 Trusted Platforms Catalog
+platforms:
+  categories:
+    direct_ats:
+      name: "Direct ATS Portals (Highest Conversion, 0 Spam)"
+      items:
+        - { id: "greenhouse", name: "Greenhouse", domain: "boards.greenhouse.io" }
+        - { id: "lever", name: "Lever", domain: "jobs.lever.co" }
+        - { id: "workday", name: "Workday", domain: "myworkdayjobs.com" }
+        - { id: "ashby", name: "Ashby", domain: "jobs.ashbyhq.com" }
+        - { id: "smartrecruiters", name: "SmartRecruiters", domain: "jobs.smartrecruiters.com" }
+        - { id: "workable", name: "Workable", domain: "apply.workable.com" }
+        - { id: "bamboohr", name: "BambooHR", domain: "bamboohr.com/careers" }
+        - { id: "breezyhr", name: "Breezy HR", domain: "breezy.hr" }
+        - { id: "recruitee", name: "Recruitee", domain: "recruitee.com" }
+        - { id: "jazzhr", name: "JazzHR", domain: "jazzhr.com" }
+        - { id: "rippling", name: "Rippling ATS", domain: "rippling.com/careers" }
+        - { id: "jobvite", name: "Jobvite", domain: "jobs.jobvite.com" }
+        - { id: "taleo", name: "Oracle Taleo", domain: "taleo.net" }
+        - { id: "pinpoint", name: "Pinpoint ATS", domain: "pinpointhq.com" }
+        - { id: "comeet", name: "Comeet", domain: "comeet.com" }
+
+    tier1_major_networks:
+      name: "Tier 1 Major Networks & Aggregators"
+      items:
+        - { id: "linkedin", name: "LinkedIn Jobs", domain: "linkedin.com/jobs" }
+        - { id: "indeed", name: "Indeed", domain: "indeed.com" }
+        - { id: "google_jobs", name: "Google Jobs Engine", domain: "google.com" }
+        - { id: "glassdoor", name: "Glassdoor", domain: "glassdoor.com" }
+        - { id: "ziprecruiter", name: "ZipRecruiter", domain: "ziprecruiter.com" }
+        - { id: "dice", name: "Dice Tech Jobs", domain: "dice.com" }
+        - { id: "monster", name: "Monster", domain: "monster.com" }
+        - { id: "careerbuilder", name: "CareerBuilder", domain: "careerbuilder.com" }
+        - { id: "simplyhired", name: "SimplyHired", domain: "simplyhired.com" }
+        - { id: "joblist", name: "Joblist", domain: "joblist.com" }
+        - { id: "snagajob", name: "Snagajob", domain: "snagajob.com" }
+        - { id: "ladders", name: "The Ladders", domain: "theladders.com" }
+        - { id: "lensa", name: "Lensa", domain: "lensa.com" }
+        - { id: "jooble", name: "Jooble", domain: "jooble.org" }
+        - { id: "talent_com", name: "Talent.com", domain: "talent.com" }
+
+    startup_ecosystems:
+      name: "Startup & Venture Ecosystems"
+      items:
+        - { id: "wellfound", name: "Wellfound (AngelList)", domain: "wellfound.com" }
+        - { id: "ycombinator", name: "Y Combinator (Work at a Startup)", domain: "workatastartup.com" }
+        - { id: "builtin", name: "Built In Tech", domain: "builtin.com" }
+        - { id: "techstars", name: "Techstars Careers", domain: "jobs.techstars.com" }
+        - { id: "otta", name: "Otta (Welcome to the Jungle)", domain: "otta.com" }
+        - { id: "levels_fyi", name: "Levels.fyi Jobs", domain: "levels.fyi/jobs" }
+        - { id: "hackernews", name: "Hacker News (Who is Hiring)", domain: "news.ycombinator.com" }
+        - { id: "keyvalues", name: "Key Values", domain: "keyvalues.com" }
+        - { id: "producthunt", name: "Product Hunt Jobs", domain: "producthunt.com/jobs" }
+        - { id: "ventureloop", name: "VentureLoop", domain: "ventureloop.com" }
+        - { id: "startupjobs", name: "Startup Jobs", domain: "startup.jobs" }
+        - { id: "underdog", name: "Underdog.io", domain: "underdog.io" }
+        - { id: "crunchbase", name: "Crunchbase Careers", domain: "crunchbase.com" }
+        - { id: "untapped", name: "Untapped", domain: "untapped.io" }
+        - { id: "f6s", name: "F6S Startups", domain: "f6s.com" }
+
+    dedicated_remote_boards:
+      name: "Dedicated Remote Tech Boards"
+      items:
+        - { id: "remoteok", name: "RemoteOK", domain: "remoteok.com" }
+        - { id: "weworkremotely", name: "We Work Remotely", domain: "weworkremotely.com" }
+        - { id: "remotive", name: "Remotive", domain: "remotive.com" }
+        - { id: "jobicy", name: "Jobicy", domain: "jobicy.com" }
+        - { id: "arbeitnow", name: "Arbeitnow", domain: "arbeitnow.com" }
+        - { id: "workingnomads", name: "Working Nomads", domain: "workingnomads.com" }
+        - { id: "remoterocketship", name: "Remote Rocketship", domain: "remoterocketship.com" }
+        - { id: "flexjobs", name: "FlexJobs", domain: "flexjobs.com" }
+        - { id: "virtualvocations", name: "Virtual Vocations", domain: "virtualvocations.com" }
+        - { id: "dailyremote", name: "DailyRemote", domain: "dailyremote.com" }
+        - { id: "justremote", name: "JustRemote", domain: "justremote.co" }
+        - { id: "remote_co", name: "Remote.co", domain: "remote.co" }
+        - { id: "himalayas", name: "Himalayas", domain: "himalayas.app" }
+        - { id: "nodesk", name: "NoDesk", domain: "nodesk.co" }
+        - { id: "remotelypeople", name: "RemotelyPeople", domain: "remotelypeople.com" }
+        - { id: "pangian", name: "Pangian", domain: "pangian.com" }
+        - { id: "skipthedrive", name: "SkipTheDrive", domain: "skipthedrive.com" }
+        - { id: "europeremotely", name: "EuropeRemotely", domain: "europeremotely.com" }
+        - { id: "remoteworkmate", name: "RemoteWorkmate", domain: "remoteworkmate.com" }
+        - { id: "dynamitejobs", name: "Dynamite Jobs", domain: "dynamitejobs.com" }
+
+    developer_ai_specialist:
+      name: "Developer & AI Specialist Platforms"
+      items:
+        - { id: "aijobs_net", name: "AI Jobs Net", domain: "aijobs.net" }
+        - { id: "devitjobs", name: "DevITjobs", domain: "devitjobs.com" }
+        - { id: "python_org", name: "Python.org Official Jobs", domain: "python.org/jobs" }
+        - { id: "pycoder_jobs", name: "PyCoder Jobs", domain: "jobs.pycoders.com" }
+        - { id: "relocateme", name: "Relocate.me", domain: "relocate.me" }
+        - { id: "honeypot", name: "Honeypot.io", domain: "honeypot.io" }
+        - { id: "arc_dev", name: "Arc.dev", domain: "arc.dev" }
+        - { id: "turing", name: "Turing", domain: "turing.com" }
+        - { id: "toptal", name: "Toptal Tech", domain: "toptal.com" }
+        - { id: "gun_io", name: "Gun.io", domain: "gun.io" }
+        - { id: "authenticjobs", name: "Authentic Jobs", domain: "authenticjobs.com" }
+        - { id: "rubynow", name: "RubyNow", domain: "rubynow.com" }
+        - { id: "kaggle_jobs", name: "Kaggle Community Jobs", domain: "kaggle.com" }
+        - { id: "github_jobs", name: "GitHub Tech Jobs", domain: "github.com" }
+        - { id: "stackoverflow_network", name: "Stack Overflow Careers Network", domain: "stackoverflow.com/jobs" }
+
+    regional_pakistan_global:
+      name: "Pakistan Tech Hubs & Regional Platforms"
+      items:
+        - { id: "rozee_pk", name: "Rozee.pk (Pakistan Tech)", domain: "rozee.pk" }
+        - { id: "mustakbil", name: "Mustakbil.com (Pakistan)", domain: "mustakbil.com" }
+        - { id: "bayt", name: "Bayt (Middle East & Pak)", domain: "bayt.com" }
+        - { id: "gulftalent", name: "GulfTalent", domain: "gulftalent.com" }
+        - { id: "reed_uk", name: "Reed.co.uk (UK)", domain: "reed.co.uk" }
+        - { id: "totaljobs", name: "TotalJobs", domain: "totaljobs.com" }
+        - { id: "cwjobs", name: "CWJobs Tech", domain: "cwjobs.co.uk" }
+        - { id: "stepstone_de", name: "StepStone (Germany)", domain: "stepstone.de" }
+        - { id: "stepstone_eu", name: "StepStone (Europe)", domain: "stepstone.com" }
+        - { id: "xing", name: "Xing", domain: "xing.com" }
+        - { id: "infojobs", name: "InfoJobs", domain: "infojobs.net" }
+        - { id: "seek_au", name: "Seek (Australia & NZ)", domain: "seek.com.au" }
+        - { id: "jobstreet", name: "JobStreet (Asia)", domain: "jobstreet.com" }
+        - { id: "naukri", name: "Naukri Tech", domain: "naukri.com" }
+        - { id: "efinancialcareers", name: "eFinancialCareers (FinTech)", domain: "efinancialcareers.com" }
+        - { id: "techmeme", name: "Techmeme Tech Board", domain: "techmeme.com" }
+        - { id: "jobserve", name: "Jobserve", domain: "jobserve.com" }
+        - { id: "jobsite_uk", name: "Jobsite UK", domain: "jobsite.co.uk" }
+        - { id: "neuvoo", name: "Neuvoo", domain: "neuvoo.com" }
+        - { id: "monstergulf", name: "Monster Gulf", domain: "monstergulf.com" }

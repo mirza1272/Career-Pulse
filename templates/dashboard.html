@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  /* EXECUTIVE MINIMALIST DASHBOARD DESIGN */
+  .dash-hero-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .dash-main-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #f8fafc;
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dash-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .dash-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .dash-system-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: #13151c;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .status-dot-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* REFINED METRIC CARDS */
+  .metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .stat-tile {
+    background: #13151c;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+
+  .stat-tile:hover {
+    border-color: var(--line-hover);
+    transform: translateY(-2px);
+    background: #161922;
+  }
+
+  .stat-tile-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .stat-tile-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  .stat-tile-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line);
+  }
+
+  .stat-tile-number {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #f8fafc;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-tile-meta {
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* TWO COLUMN MAIN CONTENT */
+  .dash-columns-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+
+  .dash-card {
+    background: #13151c;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dash-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dash-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .dash-card-body {
+    padding: 12px;
+    flex: 1;
+  }
+
+  .dash-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+    margin-bottom: 4px;
+    background: transparent;
+  }
+
+  .dash-list-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .dash-list-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .dash-card-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* PIPELINE STRIP */
+  .pipeline-bar-card {
+    background: #13151c;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+
+  .pipeline-step-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .pipeline-step-box {
+    background: #0e1015;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* RESPONSIVE MEDIA QUERIES */
+  @media (max-width: 1024px) {
+    .metrics-strip {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .dash-columns-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .metrics-strip {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .pipeline-step-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .dash-hero-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+    }
+    .dash-actions-row {
+      width: 100%;
+    }
+    .dash-actions-row .btn,
+    .dash-actions-row a {
+      flex: 1 1 auto;
+      text-align: center;
+      justify-content: center;
+    }
+    .dash-system-status {
+      width: 100%;
+      justify-content: space-between;
+      box-sizing: border-box;
+    }
+    .dash-list-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 8px;
+    }
+    .dash-list-row > div:last-child {
+      width: 100%;
+      justify-content: space-between;
+      display: flex;
+    }
+  }
+</style>
+
+<div style="max-width: 1300px; margin: 0 auto;">
+
+  <!-- ========================================================================= -->
+  <!-- 1. CLEAN HERO HEADER                                                      -->
+  <!-- ========================================================================= -->
+  <div class="dash-hero-header">
+    <div>
+      <h1 class="dash-main-title">
+        Dashboard
+      </h1>
+      <div class="dash-subtitle">
+        Overview for <strong style="color: #f1f5f9;">{{ candidate.name if candidate and candidate.name else (current_user.name or current_user.email.split('@')[0]) }}</strong> &bull; Tailored applications, radar tracking, and ATS telemetry.
+      </div>
+    </div>
+
+    <div class="dash-actions-row">
+      <div class="dash-system-status">
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="status-dot-indicator" style="background: {% if supabase_online %}#10b981{% else %}#f59e0b{% endif %};"></span>
+          <span>Cloud: <strong style="color:{% if supabase_online %}#10b981{% else %}#f59e0b{% endif %};">{% if supabase_online %}Synced{% else %}Local{% endif %}</strong></span>
+        </span>
+        <span style="color:var(--line);">|</span>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="status-dot-indicator" style="background: {% if smtp_ready %}#10b981{% else %}#f87171{% endif %};"></span>
+          <span>SMTP: <strong style="color:{% if smtp_ready %}#10b981{% else %}#f87171{% endif %};">{% if smtp_ready %}Ready{% else %}Setup{% endif %}</strong></span>
+        </span>
+      </div>
+
+      <a href="/radar" class="btn" style="background: #10b981; color: #0e1015; font-size: 13px; font-weight: 700; padding: 8px 16px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+        <span>Scan Radar</span>
+      </a>
+
+      <a href="/new" class="btn secondary" style="font-size: 13px; font-weight: 600; padding: 8px 16px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>New Application</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 2. REFINED STAT TILES                                                     -->
+  <!-- ========================================================================= -->
+  <div class="metrics-strip">
+    <!-- RADAR JOBS -->
+    <a href="/radar" class="stat-tile">
+      <div class="stat-tile-top">
+        <span class="stat-tile-label">Radar Postings</span>
+        <div class="stat-tile-icon" style="color: #38bdf8;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path><circle cx="12" cy="12" r="2"></circle></svg>
+        </div>
+      </div>
+      <div>
+        <div class="stat-tile-number">{{ total_jobs }}</div>
+        <div class="stat-tile-meta">
+          <span style="color: #38bdf8; font-weight: 600;">{{ active_jobs }} active</span>
+          <span>&bull;</span>
+          <span>{{ saved_jobs }} saved</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- IN WORKSPACE / REVIEW -->
+    <a href="/workspace?status=ready" class="stat-tile">
+      <div class="stat-tile-top">
+        <span class="stat-tile-label">Action Queue</span>
+        <div class="stat-tile-icon" style="color: #f59e0b;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+      </div>
+      <div>
+        <div class="stat-tile-number">{{ in_review_apps }}</div>
+        <div class="stat-tile-meta">
+          <span style="color: #f59e0b; font-weight: 600;">{{ approved_apps }} approved</span>
+          <span>&bull;</span>
+          <span>Ready to send</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- DISPATCHED -->
+    <a href="/sent" class="stat-tile">
+      <div class="stat-tile-top">
+        <span class="stat-tile-label">Dispatched</span>
+        <div class="stat-tile-icon" style="color: #10b981;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </div>
+      </div>
+      <div>
+        <div class="stat-tile-number">{{ sent_apps }}</div>
+        <div class="stat-tile-meta">
+          <span style="color: #10b981; font-weight: 600;">Direct delivery</span>
+          <span>&bull;</span>
+          <span>With tailored PDF</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- ATS QUALITY -->
+    <a href="/workspace" class="stat-tile">
+      <div class="stat-tile-top">
+        <span class="stat-tile-label">ATS Match Index</span>
+        <div class="stat-tile-icon" style="color: #a855f7;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        </div>
+      </div>
+      <div>
+        <div class="stat-tile-number">
+          {% if avg_ats_score > 0 %}{{ avg_ats_score }}%{% else %}—{% endif %}
+        </div>
+        <div class="stat-tile-meta">
+          <span style="color: #a855f7; font-weight: 600;">{{ high_ats_count }} high match</span>
+          <span>&bull;</span>
+          <span>Target &ge; 80%</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 3. MAIN WORKSPACE & RADAR STREAMS (2 CLEAN COLUMNS)                       -->
+  <!-- ========================================================================= -->
+  <div class="dash-columns-grid">
+    
+    <!-- LEFT: RECENT APPLICATIONS -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3 class="dash-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          Recent Applications
+        </h3>
+        <span class="badge" style="background: rgba(255, 255, 255, 0.04); color: var(--muted); border-color: var(--line); font-size: 11px;">
+          {{ total_apps }} total
+        </span>
+      </div>
+
+      <div class="dash-card-body">
+        {% for a in recent_apps %}
+        {% set st = 'draft' if a.status == 'pending' else (a.status or 'draft') %}
+        <div class="dash-list-row">
+          <div style="min-width: 0; flex: 1; padding-right: 10px;">
+            <a href="/application/{{ a.id }}" style="font-weight: 600; color: #f8fafc; font-size: 13.5px; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ a.job_title or "(Untitled Role)" }}
+            </a>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+              {{ a.company or "Direct Application" }}
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            {% if a.ats_score %}
+              <span class="badge" style="font-weight: 700; font-size: 11px; {% if a.ats_score >= 80 %}background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;{% else %}background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;{% endif %}">
+                {{ "%.0f"|format(a.ats_score) }}%
+              </span>
+            {% endif %}
+
+            <span class="badge" style="font-size: 11px; {% if st == 'sent' %}background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;{% elif st == 'failed' %}background: #3a1d1d; color: #f87171; border: 1px solid #7a2e2e;{% elif st == 'pending_approval' %}background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;{% elif st == 'approved' %}background: #0b2b26; color: #2dd4bf; border: 1px solid #134e4a;{% elif st == 'ready' %}background: #1e2a4a; color: #93c5fd; border: 1px solid #2b3f6b;{% else %}background: #202430; color: var(--muted); border: 1px solid var(--line);{% endif %}">
+              {{ st.replace('_', ' ').title() }}
+            </span>
+
+            <a href="/application/{{ a.id }}" class="btn secondary" style="padding: 4px 10px; font-size: 11.5px; border-radius: 6px;">
+              Review
+            </a>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px 16px; color: var(--muted);">
+          <div style="font-size: 13px; margin-bottom: 8px;">No applications in your queue yet.</div>
+          <a href="/new" class="btn secondary" style="font-size: 12px; padding: 6px 12px;">Create Application</a>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="dash-card-footer">
+        <a href="/workspace" style="font-size: 12px; color: #10b981; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          <span>Open Full Workspace</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT: RADAR OPPORTUNITIES -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3 class="dash-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          Radar Job Feed
+        </h3>
+        <span class="badge" style="background: rgba(255, 255, 255, 0.04); color: var(--muted); border-color: var(--line); font-size: 11px;">
+          {{ active_jobs }} active
+        </span>
+      </div>
+
+      <div class="dash-card-body">
+        {% for j in recent_jobs %}
+        <div class="dash-list-row">
+          <div style="min-width: 0; flex: 1; padding-right: 10px;">
+            <div style="font-weight: 600; color: #f8fafc; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ j.title }}
+            </div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px;">
+              <span style="color: #cbd5e1;">{{ j.company }}</span>
+              {% if j.location %}<span>&bull;</span> <span>{{ j.location }}</span>{% endif %}
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <span class="badge" style="background: #181b24; border: 1px solid var(--line); font-size: 10.5px; color: var(--muted);">
+              {{ j.source or "Direct" }}
+            </span>
+
+            <form method="post" action="/new" style="display: inline; margin: 0;">
+              <input type="hidden" name="job_title" value="{{ j.title }}">
+              <input type="hidden" name="company" value="{{ j.company }}">
+              <input type="hidden" name="link" value="{{ j.link }}">
+              <input type="hidden" name="jd_text" value="{{ j.jd_text }}">
+              <button type="submit" class="btn" style="background: #10b981; color: #0e1015; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 6px;">
+                Tailor
+              </button>
+            </form>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px 16px; color: var(--muted);">
+          <div style="font-size: 13px; margin-bottom: 8px;">No job postings in Radar feed.</div>
+          <a href="/radar" class="btn secondary" style="font-size: 12px; padding: 6px 12px;">Scan Radar</a>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="dash-card-footer">
+        <a href="/radar" style="font-size: 12px; color: #10b981; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          <span>Explore All Radar Jobs</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 4. CLEAN PIPELINE FLOW STRIP                                              -->
+  <!-- ========================================================================= -->
+  <div class="pipeline-bar-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);">
+        Application Pipeline Funnel
+      </span>
+      <span style="font-size: 12px; color: var(--muted);">
+        {{ total_apps }} applications tailored to date
+      </span>
+    </div>
+
+    <div class="pipeline-step-grid">
+      <div class="pipeline-step-box">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">1. Discovered</div>
+          <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-top: 2px;">{{ total_jobs }}</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+      </div>
+
+      <div class="pipeline-step-box">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">2. Tailored</div>
+          <div style="font-size: 18px; font-weight: 800; color: #f8fafc; margin-top: 2px;">{{ total_apps }}</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      </div>
+
+      <div class="pipeline-step-box">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">3. In Review</div>
+          <div style="font-size: 18px; font-weight: 800; color: #f59e0b; margin-top: 2px;">{{ in_review_apps }}</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+
+      <div class="pipeline-step-box">
+        <div>
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">4. Dispatched</div>
+          <div style="font-size: 18px; font-weight: 800; color: #10b981; margin-top: 2px;">{{ sent_apps }}</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

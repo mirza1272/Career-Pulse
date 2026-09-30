@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Workspace</h1>
+<p class="muted" style="margin-top:-8px;">All your applications. Click a status to filter.</p>
+
+{# Phase 14: status filter cards. Legacy 'pending' rows count under Draft. #}
+<div class="cards" style="margin-bottom:16px;">
+  <a href="/workspace?status=all" class="card" style="text-decoration:none; {% if active_status == 'all' %}border-color:var(--green);{% endif %}">
+    <div class="label">All</div><div class="value">{{ counts.all }}</div>
+  </a>
+  {% for st in status_order %}
+  <a href="/workspace?status={{ st }}" class="card" style="text-decoration:none; {% if active_status == st %}border-color:var(--green);{% endif %}">
+    <div class="label">{{ st.replace('_', ' ').title() }}</div><div class="value">{{ counts[st] }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="table-responsive">
+  <table style="min-width: 720px;">
+    <thead>
+      <tr>
+        <th style="width:24%;">Role</th>
+        <th style="width:16%;">Company</th>
+        <th style="width:18%;">Email</th>
+        <th style="width:10%;">ATS</th>
+        <th style="width:12%;">Status</th>
+        <th style="width:10%;">Created</th>
+        <th style="width:10%; text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in applications %}
+      {% set st = 'draft' if a.status == 'pending' else (a.status or 'draft') %}
+      <tr>
+        <td><a class="rowlink" href="/application/{{ a.id }}"><strong>{{ a.job_title or "(untitled)" }}</strong></a></td>
+        <td>{{ a.company or "—" }}</td>
+        <td>{{ a.email or "— (Web Portal)" }}</td>
+        <td>
+          {% if a.ats_score %}
+            <span class="badge" style="font-weight:700; {% if a.ats_score >= 80 %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+              {{ "%.0f"|format(a.ats_score) }}
+            </span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge" style="{% if st == 'sent' %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% elif st == 'failed' %}background:#3a1d1d; color:#ff7a88; border:1px solid #7a2e2e;{% elif st == 'pending_approval' %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% elif st == 'approved' %}background:#0b2b26; color:#2dd4bf; border:1px solid #134e4a;{% elif st == 'ready' %}background:#1e2a4a; color:#93c5fd; border:1px solid #2b3f6b;{% else %}background:#202430; color:var(--muted); border:1px solid #363c4e;{% endif %}">
+            {{ st.replace('_', ' ').title() }}
+          </span>
+        </td>
+        <td class="muted" style="font-size:12px;">{{ a.created_at.strftime("%Y-%m-%d %H:%M") if a.created_at else "" }}</td>
+        <td style="text-align:right;">
+          <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+            <a class="btn secondary" href="/application/{{ a.id }}" style="margin:0; padding:6px 12px; font-size:12px;" title="Review & Dispatch">Review</a>
+            <form method="post" action="/application/{{ a.id }}/delete" style="display:inline;">
+              <button type="button" class="btn secondary" style="margin:0; padding:6px 10px; font-size:12px; border-color:#5a262e; color:#ff7a88;" title="Delete Application" data-title="{{ a.job_title }} at {{ a.company }}" onclick="confirmDelete(event, this.form, this.getAttribute('data-title'))">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1 2-2H7a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted" style="text-align:center; padding:32px;">
+        {% if active_status == 'all' %}
+          No applications yet. Discover jobs via <a href="/radar">Radar</a> and click <strong>Tailor &amp; Apply</strong> to queue applications here.
+        {% else %}
+          No {{ active_status.replace('_', ' ') }} applications. <a href="/workspace?status=all">Show all</a>
+        {% endif %}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

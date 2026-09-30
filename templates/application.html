@@ -1,0 +1,1710 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if request.query_params.get("saved") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Application details and email updated successfully.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("resume_edited") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Resume content updated, A4 PDF re-rendered, and ATS score recalculated!</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("resume_uploaded") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Custom resume PDF uploaded and successfully attached to this application!</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("restored_generated") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Removed custom PDF and switched back to AI-tailored resume!</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("template_changed") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Resume template switched successfully! All custom content, sections, and locks preserved.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("resume_recreated") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Resume successfully regenerated with your custom parameters!</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("restored") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Restored {{ request.query_params.get("restored") }} as the current resume. Your manual-edit locks were re-applied on top. This restore was saved as a new version, so you can undo it.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("version_deleted") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Deleted resume version {{ request.query_params.get("version_deleted") }}.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("sent") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:14px 18px; margin-bottom:18px;">
+    <div style="font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>Application Successfully Dispatched!</span>
+    </div>
+    <span style="font-size:13px;">
+      {% if request.query_params.get("disp") == "redirected" %}
+        Test Mode Active: Message and tailored PDF were safely redirected to <strong>{{ request.query_params.get("target") or "your test inbox" }}</strong>.
+      {% else %}
+        Message and tailored PDF transmitted directly to <strong>{{ request.query_params.get("target") or a.email }}</strong>.
+      {% endif %}
+    </span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("applied") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Marked as applied on employer portal.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("approved") %}
+  <div class="card" style="background:#0e291b; border:1px solid #1e633d; color:var(--green); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Application approved. Review once more, then <strong>Send</strong> below when ready — nothing sends automatically.</span>
+  </div>
+{% endif %}
+
+{% if request.query_params.get("error") %}
+  <div class="error" style="margin-bottom:18px;">
+    Error: {{ request.query_params.get("error") }}
+  </div>
+{% endif %}
+
+<style>
+  /* SUBTAB SCROLLBAR & HORIZONTAL SCROLL */
+  .cust-subtab-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #272b38;
+    scrollbar-width: thin;
+    scrollbar-color: #272b38 transparent;
+  }
+  .cust-subtab-bar::-webkit-scrollbar {
+    height: 4px;
+  }
+  .cust-subtab-bar::-webkit-scrollbar-thumb {
+    background: #272b38;
+    border-radius: 4px;
+  }
+  .cust-subtab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 860px) {
+    .app-header-flex {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 14px !important;
+    }
+    .app-header-actions {
+      align-items: stretch !important;
+      text-align: left !important;
+      width: 100% !important;
+    }
+    .app-header-actions .btn {
+      width: 100% !important;
+      text-align: center !important;
+    }
+    .app-actions-group {
+      width: 100% !important;
+      flex-direction: column !important;
+    }
+    .app-actions-group form,
+    .app-actions-group button {
+      width: 100% !important;
+      text-align: center !important;
+    }
+    .ats-grid-skills {
+      grid-template-columns: 1fr !important;
+      gap: 14px !important;
+    }
+    .resume-tab-btn-group {
+      width: 100% !important;
+      flex-direction: column !important;
+      margin-top: 10px !important;
+    }
+    .resume-tab-btn-group button {
+      width: 100% !important;
+      text-align: center !important;
+    }
+    .hub-recreate-bar-flex {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+    }
+    .hub-recreate-bar-flex > div {
+      width: 100% !important;
+      justify-content: space-between !important;
+    }
+    .hub-recreate-bar-flex select {
+      flex: 1 !important;
+    }
+    .hub-recreate-bar-flex #btnHubRecreate {
+      width: 100% !important;
+      text-align: center !important;
+    }
+    #resumeIframe {
+      height: 78vh !important;
+      min-height: 520px !important;
+    }
+    #resumeCanvasWrapper {
+      padding: 10px 4px !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    .resume-toolbar-flex {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+    }
+    .resume-toolbar-actions {
+      width: 100% !important;
+      justify-content: space-between !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
+    .resume-toolbar-actions .btn {
+      flex: 1 1 auto !important;
+      text-align: center !important;
+      padding: 6px 8px !important;
+      font-size: 11.5px !important;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .skills-category-card, .project-card {
+      padding: 10px !important;
+    }
+    .custom-skill-input {
+      font-size: 13px !important;
+    }
+    .card {
+      padding: 14px 12px !important;
+    }
+    .section-order-item {
+      padding: 8px 10px !important;
+    }
+  }
+</style>
+
+<div class="app-header-flex" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+  <div>
+    <h1>{{ a.job_title or "Application" }}{% if a.company %} — {{ a.company }}{% endif %}</h1>
+    <div class="meta">
+      To: <strong>{{ a.email or "(Web Portal Job - No Email)" }}</strong> &nbsp;·&nbsp;
+      Status:
+      {% if a.status == "sent" %}
+        <span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230;">SENT</span>
+      {% else %}
+        <span class="badge">{{ a.status }}</span>
+      {% endif %}
+      {% if a.disposition %}
+        <span class="badge" style="font-size:11px;">{{ a.disposition }}</span>
+      {% endif %}
+      {% if 'custom' in (a.resume_path or '') %}
+        <span class="badge" style="background:#26183a; color:#d8b4fe; border:1px solid #58338a;">Custom Resume PDF</span>
+      {% endif %}
+      {% if a.ats_score %}
+        &nbsp;·&nbsp; ATS Score:
+        <span class="badge" style="font-weight:700; {% if a.ats_score >= 80 %}background:#064e3b; color:var(--green); border:1px solid #059669;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+          {{ "%.0f"|format(a.ats_score) }}/100
+        </span>
+        <span class="muted" style="font-size:12px;">({{ a.ats_attempts or 1 }} attempt{{ 's' if (a.ats_attempts or 1) > 1 else '' }})</span>
+      {% endif %}
+    </div>
+    {% if a.link and a.job_id %}
+      <div class="meta">Source: <a class="rowlink" href="{{ a.link }}" target="_blank">{{ a.link }}</a></div>
+    {% elif a.link %}
+      <div class="meta">Job Link (detected in JD): <a class="rowlink" href="{{ a.link }}" target="_blank">{{ a.link }}</a></div>
+    {% endif %}
+  </div>
+
+  <div class="app-header-actions" style="text-align:right; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+    {% if a.resume_path %}
+      <a class="btn" href="/application/{{ a.id }}/resume.pdf" target="_blank" style="text-decoration:none; margin-top:0;">Download Resume (PDF)</a>
+      <a class="rowlink" href="/application/{{ a.id }}/resume.html" target="_blank" style="font-size:12px;">View HTML Version ↗</a>
+    {% endif %}
+  </div>
+</div>
+
+{# Clean, Compact ATS & Match Insights #}
+<div id="atsSection" style="margin-bottom:24px;">
+  {% if ats or gap %}
+  <div class="card" style="padding:18px 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span style="font-weight:700; font-size:16px;">ATS Match Analysis</span>
+        {% if ats %}
+          <span class="badge" style="font-size:11.5px; background:#13151c; border:1px solid #272b38;">Parsing: {{ "%.0f"|format(ats.parsing_safety_score) }}/40</span>
+          <span class="badge" style="font-size:11.5px; background:#13151c; border:1px solid #272b38;">Relevance: {{ "%.0f"|format(ats.relevance_score) }}/60</span>
+        {% endif %}
+        {% if gap and gap.coverage %}
+          <span class="badge" style="font-size:11.5px; background:#13151c; border:1px solid #272b38;">Coverage: {{ "%.0f"|format(gap.coverage * 100) }}%</span>
+        {% endif %}
+      </div>
+      {% if ats %}
+      <div style="font-size:26px; font-weight:800; color:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};">
+        {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:14px; color:#94a3b8; font-weight:500;">/100</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if ats %}
+    <div style="height:6px; background:#1e2230; border-radius:4px; overflow:hidden; margin-bottom:16px;">
+      <div style="height:100%; width:{{ ats.ats_readiness_score }}%; border-radius:4px; background:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};"></div>
+    </div>
+    {% endif %}
+
+    <div class="ats-grid-skills" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;">
+      <!-- Matched Skills -->
+      {% set matched = (ats.matched_skills if ats and ats.matched_skills else (gap.matched_skills if gap and gap.matched_skills else [])) %}
+      <div>
+        <div style="font-size:12.5px; font-weight:600; color:var(--green); margin-bottom:8px;">
+          Matched Skills ({{ matched|length }})
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          {% for sk in matched[:20] %}
+            <span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230; font-size:12px; padding:3px 8px;">{{ sk }}</span>
+          {% else %}
+            <span class="muted" style="font-size:12px;">None detected</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Missing Skills -->
+      {% set missing = (gap.missing_skills if gap and gap.missing_skills else (ats.missing_attested_skills if ats and ats.missing_attested_skills else [])) %}
+      <div>
+        <div style="font-size:12.5px; font-weight:600; color:var(--yellow); margin-bottom:8px;">
+          Missing Skills ({{ missing|length }})
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          {% for sk in missing[:20] %}
+            <span class="badge" style="background:#352507; color:var(--yellow); border:1px solid #6b4d0e; font-size:12px; padding:3px 8px;">{{ sk }}</span>
+          {% else %}
+            <span class="muted" style="font-size:12px;">None missing</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if ats and ats.suggestions %}
+    <div style="border-top:1px solid #1e2230; padding-top:12px; margin-top:12px;">
+      <div style="font-size:12px; font-weight:600; color:#94a3b8; margin-bottom:6px;">Recommendations</div>
+      <ul style="font-size:12.5px; color:#cbd5e1; margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px;">
+        {% for s in ats.suggestions[:3] %}
+          <li>{{ s }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- UNIFIED ACTION DISPATCH BAR -->
+<div class="card" style="background:#13151c; border:1px solid #272b38; margin-bottom:24px; padding:18px 22px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+    <div>
+      <div style="font-weight:700; font-size:16px; margin-bottom:4px;">Application Dispatch</div>
+      <div class="muted" style="font-size:13px;">
+        {% if a.status == "sent" %}
+          <span style="color:var(--green); font-weight:700; display:inline-flex; align-items:center; gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Application Successfully Sent</span>
+          </span>
+          {% if a.sent_at %} · <span>{{ a.sent_at.strftime('%b %d, %Y at %H:%M UTC') }}</span>{% endif %}
+          {% if a.disposition %} · <span class="badge" style="font-size:11px;">{{ a.disposition }}</span>{% endif %}
+        {% else %}
+          {% if test_mode %}
+            <strong>Test Mode Active:</strong> Outbound emails redirect safely to <code>{{ test_recipient }}</code>.
+          {% else %}
+            <strong>Live Dispatch Mode:</strong> Message and tailored PDF deliver directly to <strong>{{ a.email or 'employer email' }}</strong>.
+          {% endif %}
+          <br>Review your tailored email and resume below, then click <strong>Approve &amp; Send</strong> to dispatch.
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="app-actions-group" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button type="button" class="btn secondary" style="margin:0;" onclick="copyEmailBody()">Copy Email Text</button>
+
+      {% if a.status == 'sent' %}
+        <form id="approveSendForm" method="post" action="/application/{{ a.id }}/send" style="display:inline;">
+          <input type="hidden" name="email" id="sendPayloadEmail" value="{{ a.email }}">
+          <input type="hidden" name="subject" id="sendPayloadSubject" value="{{ a.subject or default_subject }}">
+          <input type="hidden" name="drafted_email" id="sendPayloadBody" value="">
+          <button type="button" class="btn secondary" style="margin:0;" onclick="openSendConfirmDialog()">
+            Resend Application
+          </button>
+        </form>
+      {% else %}
+        <!-- SINGLE DIRECT ACTION: Approve & Send with confirmation modal -->
+        <form id="approveSendForm" method="post" action="/application/{{ a.id }}/send" style="display:inline;">
+          <input type="hidden" name="email" id="sendPayloadEmail" value="{{ a.email }}">
+          <input type="hidden" name="subject" id="sendPayloadSubject" value="{{ a.subject or default_subject }}">
+          <input type="hidden" name="drafted_email" id="sendPayloadBody" value="">
+          <button type="button" class="btn" style="margin:0; background:var(--green); color:#0e1015; font-weight:700; font-size:14px; padding:10px 22px;" onclick="openSendConfirmDialog()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Approve &amp; Send Application
+          </button>
+        </form>
+      {% endif %}
+
+      <form method="post" action="/application/{{ a.id }}/mark-applied" style="display:inline;">
+        <button type="submit" class="btn secondary" style="margin:0;">
+          Mark as Applied (Portal)
+        </button>
+      </form>
+
+      <form method="post" action="/application/{{ a.id }}/delete" style="display:inline;">
+        <button type="button" class="btn secondary" style="margin:0; border-color:#5a262e; color:#ff7a88;" title="Permanently delete application" data-title="{{ a.job_title }} at {{ a.company }}" onclick="confirmDelete(event, this.form, this.getAttribute('data-title'))">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Delete
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW & EDIT COVER EMAIL -->
+<div class="card" style="margin-bottom:24px; padding:22px;">
+  <h3 style="margin-bottom:14px; font-size:18px;">Review &amp; Edit Application Email</h3>
+  <form id="editEmailForm" method="post" action="/application/{{ a.id }}/edit" onsubmit="saveEmailChangesAsync(event, this)">
+    <div class="row2">
+      <div>
+        <label>Job Title</label>
+        <input type="text" name="job_title" id="editJobTitleInput" value="{{ a.job_title }}" required>
+      </div>
+      <div>
+        <label>Company</label>
+        <input type="text" name="company" id="editCompanyInput" value="{{ a.company }}">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Employer / Recipient Email</label>
+        <input type="text" name="email" id="editEmailInput" value="{{ a.email }}" placeholder="recruiter@company.com (or empty for portal jobs)">
+      </div>
+      <div>
+        <label>Email Subject Line</label>
+        <input type="text" name="subject" id="editSubjectInput" value="{{ a.subject or default_subject }}" required>
+      </div>
+    </div>
+
+    <label>Cover Letter / Application Email Body</label>
+    <textarea name="drafted_email" id="emailBodyText" rows="9" required>{{ a.drafted_email }}</textarea>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; flex-wrap:wrap; gap:10px;">
+      <span class="muted" style="font-size:12px;">Changes will be saved to this application and used upon dispatch.</span>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="submit" id="btnSaveEmail" class="btn secondary" style="margin:0;">Save Email Changes</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- AI EMAIL REGENERATOR: instruction -> LLM -> regenerated email -->
+  <form id="aiRegenerateEmailForm" method="post" action="/application/{{ a.id }}/email/regenerate" style="margin-top:16px; background:#0e1015; border:1px solid var(--line); border-radius:8px; padding:16px;" onsubmit="aiRegenerateEmailAsync(event, this)">
+    <label style="font-weight:600; color:#e2e8f0; margin-bottom:6px; display:block;">AI Regenerate Email <span class="badge" style="background:#064e3b; color:#34d399; border:1px solid #059669; font-size:11px; margin-left:6px;">Instant AI</span></label>
+    <div class="hint" style="color:#94a3b8; margin-bottom:10px; font-size:13px;">
+      Describe the changes you want. The AI will rewrite the cover email accordingly.
+    </div>
+    <textarea name="instruction" id="aiEmailInstructionInput" rows="2" required style="width:100%; background:#13151c; border:1px solid var(--line); border-radius:8px; color:var(--text); padding:10px 12px; font-size:13px; resize:vertical;" placeholder="e.g. make it shorter, more formal, and highlight Python experience"></textarea>
+    <div style="margin-top:12px; text-align:right;">
+      <button type="submit" id="btnAiRegenEmail" class="btn" style="margin:0; padding:9px 20px; font-size:14px; font-weight:600;">Regenerate Email with AI</button>
+    </div>
+  </form>
+</div>
+
+<!-- RESUME CUSTOMIZATION & CONTROL HUB -->
+<div class="card" style="margin-bottom:24px; padding:20px 22px; background:#13151c; border:1px solid #272b38;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h3 style="font-size:18px; margin:0;">Resume Customization &amp; Control Hub</h3>
+      <div class="muted" style="font-size:13px; margin-top:3px;">Select project count to include for this job or open granular section customizer.</div>
+    </div>
+    <div class="resume-tab-btn-group" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" class="btn secondary" id="tabBtnEdit" style="margin:0; padding:8px 16px; font-size:13px;" onclick="toggleResumeTab('edit')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        <span id="tabBtnEditText">Open Section Customizer</span>
+      </button>
+      <button type="button" class="btn secondary" id="tabBtnUpload" style="margin:0; padding:8px 16px; font-size:13px;" onclick="toggleResumeTab('upload')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span id="tabBtnUploadText">Upload Custom PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- DIRECT PROJECT SELECTION & RECREATE BAR (Visible directly on /application/{id}) -->
+  <div style="background:#0e1015; border:1px solid #272b38; border-radius:8px; padding:14px 16px; margin-top:6px;">
+    <div class="hub-recreate-bar-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <!-- Project Count Select Form -->
+        <form method="post" action="/application/{{ a.id }}/resume/recreate" id="hubRecreateForm" style="margin:0; display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;" onsubmit="window.showActionOverlay('Recreating Resume via AI', 'Selecting top relevant projects, optimizing sections &amp; generating PDF...', ['[1/3] Ranking candidate projects by JD relevance...', '[2/3] Aligning skill categories &amp; ATS keywords...', '[3/3] Printing single-page PDF with Chrome...']);">
+          <input type="hidden" name="section_order" id="hubSectionOrderInput" value="{{ current_section_order_str or '' }}">
+          <input type="hidden" name="variant" id="hubRecreateVariantInput" value="{{ a.template_id or current_user.selected_template_id or 'apex_modern' }}">
+          <label for="hubProjectCountSelect" style="font-weight:600; font-size:13px; color:#e2e8f0; margin:0;">Projects:</label>
+          {% set total_projs = (resume_detail.all_projects|length) if (resume_detail and resume_detail.all_projects) else 9 %}
+          {% set min_projs = 4 if total_projs >= 4 else 1 %}
+          <select id="hubProjectCountSelect" name="project_count" onchange="onHubProjectCountChange(parseInt(this.value, 10))" style="background:#13151c; border:1px solid #10b981; border-radius:6px; color:#f8fafc; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+            {% for n in range(min_projs, total_projs + 1) %}
+            <option value="{{ n }}" {% if (resume_detail.active_project_ids|length == n) or (not resume_detail.active_project_ids and n == 5) or (resume_detail.active_project_ids|length not in range(min_projs, total_projs + 1) and n == 5) %}selected{% endif %}>
+              {{ n }} Projects{% if n == 5 %} (Default){% elif n == 4 %} (Compact){% elif n == total_projs %} (All {{ total_projs }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </form>
+
+        <!-- Template Style Quick Switch Form -->
+        <form method="post" action="/application/{{ a.id }}/change-template" style="margin:0; display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;" onsubmit="window.showActionOverlay('Applying Template Style', 'Updating visual formatting &amp; compiling PDF...', ['[1/2] Loading template typography &amp; layout...', '[2/2] Generating A4 PDF...']);">
+          <label for="hubTemplateSelect" style="font-weight:600; font-size:13px; color:#e2e8f0; margin:0;">Template:</label>
+          <select id="hubTemplateSelect" name="template_id" onchange="const v = this.value; const hi = document.getElementById('hubRecreateVariantInput'); if (hi) hi.value = v; this.form.submit();" style="background:#13151c; border:1px solid #38bdf8; border-radius:6px; color:#f8fafc; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+            {% for tmpl in (available_templates or []) %}
+            <option value="{{ tmpl.id }}" {% if tmpl.id == (a.template_id or current_user.selected_template_id or 'apex_modern') %}selected{% endif %}>
+              {{ tmpl.name }} ({{ tmpl.font_family }})
+            </option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        {% if 'custom' in (a.resume_path or '') %}
+          <span style="color:#eab308; font-size:12px; font-weight:500;">⚠ Custom PDF attached. Recreate disabled.</span>
+          <button type="button" class="btn" disabled style="margin:0; padding:8px 18px; font-size:13px; font-weight:600; opacity:0.45; cursor:not-allowed; background:#374151; color:#9ca3af;" title="Custom PDF is currently attached.">
+            Recreate &amp; Optimize Resume
+          </button>
+        {% else %}
+          <button type="button" id="btnHubRecreate" onclick="document.getElementById('hubRecreateForm').requestSubmit();" class="btn" style="margin:0; padding:8px 20px; font-size:13.5px; font-weight:600; background:var(--green); color:#0e1015;">
+            Recreate &amp; Optimize Resume
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: INTERACTIVE MODULAR SECTION CUSTOMIZER (Collapsed by default) -->
+  <div id="resumeTabEdit" style="display:none; background:#0e1015; border:1px solid var(--line); border-radius:8px; padding:18px; margin-top:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:6px;">
+      <div>
+        <h4 style="font-size:16px; margin:0; color:#f8fafc;">Section Customizer &amp; Layout Manager</h4>
+        <div class="muted" style="font-size:12px; margin-top:2px;">Customize template visual style, sequence, skills, projects, experience, and profile. Preserves A4 structure.</div>
+      </div>
+      <span class="badge" style="background:#064e3b; color:#34d399; border:1px solid #059669; font-size:11px;">Modular Control</span>
+    </div>
+
+    <!-- SUBTAB NAV BAR -->
+    <div class="cust-subtab-bar">
+      <button type="button" class="cust-subtab-btn active" id="custSubtab_sequence" onclick="switchCustSubtab('sequence')" style="background:#1e293b; border:1px solid #10b981; color:#f8fafc; font-weight:600; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Section Sequence</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_template" onclick="switchCustSubtab('template')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Template Style</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_summary" onclick="switchCustSubtab('summary')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Summary</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_skills" onclick="switchCustSubtab('skills')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Skills</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_experience" onclick="switchCustSubtab('experience')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Experience</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_projects" onclick="switchCustSubtab('projects')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Projects</button>
+      <button type="button" class="cust-subtab-btn" id="custSubtab_education" onclick="switchCustSubtab('education')" style="background:#13151c; border:1px solid #272b38; color:#94a3b8; font-weight:500; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">Education &amp; Certs</button>
+    </div>
+
+    <form method="post" action="/application/{{ a.id }}/resume/edit" onsubmit="syncSkillsJson(); syncBulletJson(); window.showActionOverlay('Re-rendering Resume', 'Updating sections and compiling PDF...', ['[1/3] Applying selected sequence &amp; categories...', '[2/3] Compiling Resume HTML...', '[3/3] Generating PDF...']);">
+      <input type="hidden" name="section_order" id="editSectionOrderInput" value="{{ current_section_order_str or '' }}">
+      <input type="hidden" name="skills_by_category_json" id="skillsByCategoryJson" value="">
+      <input type="hidden" name="project_bullets_json" id="projectBulletsJson" value="">
+      <input type="hidden" name="experience_bullets_json" id="experienceBulletsJson" value="">
+
+      <!-- PANE 1: SECTION SEQUENCE -->
+      <div id="custPane_sequence" class="cust-tab-pane" style="display:block;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <label style="font-weight:600; color:#e2e8f0; margin:0; font-size:14px;">Section Sequence &amp; Layout</label>
+              <div class="muted" style="font-size:12px; margin-top:2px;">
+                Rearrange sections in any custom order using arrows or quick presets.
+              </div>
+            </div>
+            <div id="sectionOrderSummaryBadge" style="font-size:11px; color:#38bdf8; background:#0e1015; border:1px solid #1e293b; border-radius:6px; padding:4px 10px; font-family:monospace;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Quick Presets -->
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #1e2330;">
+            <span style="font-size:12px; color:#64748b; font-weight:500;">Presets:</span>
+            <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11.5px; margin:0;" onclick="applySectionPreset('experience_first')">Experienced</button>
+            <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11.5px; margin:0;" onclick="applySectionPreset('skills_first')">Skills First</button>
+            <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11.5px; margin:0;" onclick="applySectionPreset('projects_heavy')">Project-Heavy</button>
+            <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11.5px; margin:0;" onclick="applySectionPreset('student')">Fresh Graduate</button>
+            <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11.5px; margin:0; border-color:#3b82f6; color:#93c5fd;" onclick="applySectionPreset('default')">Reset Default</button>
+          </div>
+
+          <!-- Dynamic Reorderable Section List Container -->
+          <div id="sectionOrderContainer" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Generated dynamically by renderSectionOrderUI() -->
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 2: TEMPLATE STYLE SELECTION -->
+      <div id="custPane_template" class="cust-tab-pane" style="display:none;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <div style="margin-bottom:14px;">
+            <label style="font-weight:600; color:#e2e8f0; margin:0; font-size:14px;">Choose Resume Design Template</label>
+            <div class="muted" style="font-size:12px; margin-top:2px;">Select from 5 curated, modern templates. Switching templates preserves all custom edits, sections, and locks.</div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:12px;">
+            {% for tmpl in (available_templates or []) %}
+            {% set is_active = (tmpl.id == (a.template_id or current_user.selected_template_id or 'apex_modern')) %}
+            <div style="background:#0e1015; border:2px solid {% if is_active %}#3b82f6{% else %}#272b38{% endif %}; border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; position:relative;">
+              {% if is_active %}
+              <div style="position:absolute; top:10px; right:10px; background:#1d4ed8; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:12px; text-transform:uppercase; letter-spacing:0.05em;">Active</div>
+              {% endif %}
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span style="width:12px; height:12px; border-radius:50%; background:{{ tmpl.primary_color }}; display:inline-block;"></span>
+                  <strong style="font-size:14.5px; color:#f8fafc;">{{ tmpl.name }}</strong>
+                </div>
+                <div style="font-size:11.5px; color:#94a3b8; line-height:1.4; margin-bottom:8px;">{{ tmpl.tagline }}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+                  <span style="font-size:10.5px; background:#1e293b; color:#cbd5e1; padding:2px 6px; border-radius:4px; font-family:monospace;">{{ tmpl.font_family }}</span>
+                  <span style="font-size:10.5px; background:#1e293b; color:#cbd5e1; padding:2px 6px; border-radius:4px;">{{ tmpl.color_name }}</span>
+                </div>
+              </div>
+              <div>
+                {% if is_active %}
+                <button type="button" class="btn secondary" disabled style="width:100%; margin:0; padding:6px 12px; font-size:12px; opacity:0.6; cursor:default;">Currently Applied</button>
+                {% else %}
+                <button type="button" class="btn secondary" onclick="const sel = document.getElementById('hubTemplateSelect'); if (sel) { sel.value='{{ tmpl.id }}'; const hi = document.getElementById('hubRecreateVariantInput'); if (hi) hi.value='{{ tmpl.id }}'; sel.form.submit(); }" style="width:100%; margin:0; padding:6px 12px; font-size:12px; border-color:#3b82f6; color:#93c5fd;">Apply {{ tmpl.name }}</button>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 3: SUMMARY -->
+      <div id="custPane_summary" class="cust-tab-pane" style="display:none;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block;">Profile Summary Statement</label>
+          <div class="muted" style="font-size:12px; margin-bottom:10px;">Professional summary &amp; candidate positioning statement.</div>
+          <textarea name="summary" rows="4" style="width:100%; min-height:90px; background:#0e1015; border:1px solid var(--line); border-radius:8px; color:var(--text); padding:10px; font-size:13px;" required>{{ resume_detail.summary or resume_regions.summary }}</textarea>
+        </div>
+      </div>
+
+      <!-- PANE 3: SKILLS -->
+      <div id="custPane_skills" class="cust-tab-pane" style="display:none;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <label style="font-weight:600; color:#e2e8f0; margin:0; font-size:14px;">Skills Categories &amp; Sub-Skills</label>
+              <div class="muted" style="font-size:12px; margin-top:2px;">Toggle categories, click x on pills to remove sub-skills, or add custom skills.</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn secondary" style="padding:3px 8px; font-size:11px; margin:0;" onclick="toggleAllCategories(true)">Select All</button>
+              <button type="button" class="btn secondary" style="padding:3px 8px; font-size:11px; margin:0;" onclick="toggleAllCategories(false)">Clear All</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:12px;">
+            {% for cat_name, cat_skills in resume_detail.all_categories.items() %}
+            {% set active_cat_skills = resume_detail.active_category_skills.get(cat_name) or cat_skills[:5] %}
+            <div class="skills-category-card" data-cat="{{ cat_name }}" style="background:#181b24; border:1px solid #272b38; border-radius:8px; padding:12px; transition:border-color 0.2s;">
+              <!-- Category Header -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+                  <input type="checkbox" name="selected_categories" value="{{ cat_name }}" class="cat-selector-cb" onchange="syncSkillsJson()" style="width:16px; height:16px; accent-color:#10b981; cursor:pointer;" {% if not resume_detail.active_categories or resume_detail.active_categories|length <= 1 or (cat_name in resume_detail.active_categories) %}checked{% endif %}>
+                  <strong style="font-size:13.5px; color:#f8fafc;">{{ cat_name }}</strong>
+                </label>
+                <span class="cat-pill-count badge" style="font-size:10.5px; background:#064e3b; color:#34d399; border:1px solid #059669; padding:2px 6px;">
+                  {{ active_cat_skills|length }} active
+                </span>
+              </div>
+
+              <!-- Active Sub-Skills Pills -->
+              <div class="active-pills-container" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; min-height:26px;">
+                {% for skill in active_cat_skills %}
+                <span class="skill-pill-tag active-pill" data-cat="{{ cat_name }}" data-skill="{{ skill }}" style="display:inline-flex; align-items:center; gap:4px; background:#0e1015; color:#10b981; border:1px solid #272b38; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:500;">
+                  {{ skill }}
+                  <button type="button" class="pill-remove-btn" onclick="removeSubSkill(this)" title="Remove '{{ skill }}'" style="background:none; border:none; color:#94a3b8; font-size:11px; cursor:pointer; padding:0 2px; line-height:1;">✕</button>
+                </span>
+                {% endfor %}
+              </div>
+
+              <!-- Suggested / Inactive Profile Skills to Re-Add -->
+              <div class="inactive-skills-container" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-bottom:8px;">
+                <span style="font-size:10.5px; color:#64748b;">Profile:</span>
+                {% for skill in cat_skills %}
+                  {% if skill not in active_cat_skills %}
+                  <button type="button" class="pill-add-chip" data-cat="{{ cat_name }}" data-skill="{{ skill }}" onclick="addSubSkill(this)" title="Click to add {{ skill }}" style="background:#13151c; color:#94a3b8; border:1px dashed #272b38; font-size:10px; padding:2px 6px; border-radius:4px; cursor:pointer; transition:all 0.15s ease;">
+                    ＋ {{ skill }}
+                  </button>
+                  {% endif %}
+                {% endfor %}
+              </div>
+
+              <!-- Inline Custom Skill Input -->
+              <div style="display:flex; gap:6px; margin-top:4px;">
+                <input type="text" placeholder="Add custom skill to {{ cat_name }}..." class="custom-skill-input" data-cat="{{ cat_name }}" style="flex:1; padding:4px 8px; font-size:11.5px; background:#0e1015; border:1px solid #272b38; border-radius:4px; color:#f8fafc;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomSubSkill(this);}">
+                <button type="button" class="btn secondary" style="padding:4px 10px; font-size:11px; margin:0;" onclick="addCustomSubSkill(this)">Add</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Optional Direct CSV override -->
+          <details style="margin-top:10px; font-size:12px;">
+            <summary style="color:#64748b; cursor:pointer; font-weight:500;">Advanced: Custom Skills Text Override (optional)</summary>
+            <div style="margin-top:6px;">
+              <input type="text" name="skills" value="" placeholder="Leave blank to use interactive category pills above, or enter comma-separated skills here" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;">
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- PANE 4: EXPERIENCE -->
+      <div id="custPane_experience" class="cust-tab-pane" style="display:none;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <label style="font-weight:600; color:#e2e8f0; margin:0; font-size:14px;">Employment History &amp; Experience</label>
+              <div class="muted" style="font-size:12px; margin-top:2px;">Select roles to include and edit accomplishment bullets.</div>
+            </div>
+            <span id="expCounterBadge" class="badge" style="background:#064e3b; color:#34d399; border:1px solid #059669; font-size:12px; padding:5px 12px; font-weight:600;">
+              Selected: <span id="selExpCount">0</span> / {{ resume_detail.all_experiences|length }}
+            </span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:10px;">
+            {% for exp in resume_detail.all_experiences %}
+            <label class="project-card" style="display:flex; flex-direction:column; background:#181b24; border:1px solid #272b38; border-radius:8px; padding:12px; cursor:pointer; margin:0; transition:all 0.2s;">
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <input type="checkbox" name="selected_experiences" value="{{ exp.employer }}" class="exp-selector-cb" onchange="updateExperienceCounter()" style="margin-top:3px; width:18px; height:18px; accent-color:#10b981; cursor:pointer;" {% if exp.employer in resume_detail.active_experience_employers %}checked{% endif %}>
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <strong style="color:#f8fafc; font-size:14px;">{{ exp.title }}</strong>
+                    <span class="badge" style="background:#064e3b; color:#34d399; font-size:11px; padding:2px 6px;">{{ exp.start }} – {{ exp.end or 'present' }}</span>
+                  </div>
+                  <div style="font-size:13px; color:#10b981; margin-top:2px; font-weight:600;">{{ exp.employer }} <span style="font-weight:400; color:#94a3b8; font-size:11px;">({{ exp.location or 'Remote' }})</span></div>
+                  <ul style="margin:6px 0 0 0; padding-left:16px; font-size:11px; color:#cbd5e1; line-height:1.4;">
+                    {% for b in exp.bullets %}
+                    <li style="margin:2px 0;">{{ b[:120] }}{% if b|length > 120 %}...{% endif %}</li>
+                    {% endfor %}
+                  </ul>
+                  <textarea data-expbullets-for="{{ exp.employer }}" data-original="{{ resume_detail.experience_bullets.get(exp.employer, '')|e }}" rows="3" onclick="event.stopPropagation()" placeholder="Edit bullets — one per line..." style="width:100%; margin-top:6px; background:#0e1015; border:1px solid #272b38; border-radius:6px; color:var(--text); padding:6px 8px; font-size:11px; resize:vertical;">{{ resume_detail.experience_bullets.get(exp.employer, '') }}</textarea>
+                  <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">
+                    {% for s in exp.skills_used %}
+                    <span style="background:#0e1015; color:#10b981; border:1px solid #272b38; font-size:10px; padding:1px 5px; border-radius:3px;">{{ s }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+
+          <!-- Optional direct Experience HTML override -->
+          <details style="margin-top:10px; font-size:12px;">
+            <summary style="color:#64748b; cursor:pointer; font-weight:500;">Advanced: Raw Experience HTML Override (optional)</summary>
+            <div style="margin-top:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span class="muted" style="font-size:11px;">Leave blank to use candidate experience cards above, or paste HTML below:</span>
+                <button type="button" class="btn secondary" style="padding:2px 8px; font-size:11px; margin:0;" onclick="document.getElementById('rawExpTextarea').value = document.getElementById('rawExpTemplate').value;">Load Current HTML</button>
+              </div>
+              <textarea id="rawExpTextarea" name="experience" rows="3" placeholder="Leave blank to use selected candidate experience cards above, or enter custom experience HTML here" style="width:100%; min-height:80px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;"></textarea>
+              <textarea id="rawExpTemplate" style="display:none;">{{ resume_detail.experience_html or resume_regions.experience }}</textarea>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- PANE 5: PROJECTS -->
+      <div id="custPane_projects" class="cust-tab-pane" style="display:none;">
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <div>
+              <label style="font-weight:600; color:#e2e8f0; margin:0; font-size:14px;">Candidate Projects Library</label>
+              <div class="muted" style="font-size:12px; margin-top:2px;">Select number of top projects from dropdown or customize individual checkboxes.</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label for="projectCountSelect" style="font-size:12px; color:#94a3b8; font-weight:500;">Projects to Include:</label>
+                {% set total_projs = (resume_detail.all_projects|length) if (resume_detail and resume_detail.all_projects) else 9 %}
+                {% set min_projs = 4 if total_projs >= 4 else 1 %}
+                <select id="projectCountSelect" name="project_count" onchange="applyProjectCountSelection(parseInt(this.value, 10))" style="background:#0e1015; border:1px solid #10b981; border-radius:6px; color:#f8fafc; padding:5px 10px; font-size:12.5px; font-weight:600; cursor:pointer;">
+                  {% for n in range(min_projs, total_projs + 1) %}
+                  <option value="{{ n }}" {% if (resume_detail.active_project_ids|length == n) or (not resume_detail.active_project_ids and n == 5) or (resume_detail.active_project_ids|length not in range(min_projs, total_projs + 1) and n == 5) %}selected{% endif %}>
+                    {{ n }} Projects{% if n == 5 %} (Default){% elif n == 4 %} (Compact 1-Page){% elif n == total_projs %} (All {{ total_projs }} KB Projects){% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <span id="projectCounterBadge" class="badge" style="background:#064e3b; color:#34d399; border:1px solid #059669; font-size:12px; padding:5px 12px; font-weight:600;">
+                Selected: <span id="selProjCount">0</span> / {{ resume_detail.all_projects|length }}
+              </span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:10px;">
+            {% for p in resume_detail.all_projects %}
+            <label class="project-card" style="display:flex; flex-direction:column; background:#181b24; border:1px solid #272b38; border-radius:8px; padding:12px; cursor:pointer; margin:0; transition:all 0.2s;">
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <input type="checkbox" name="selected_projects" value="{{ p.id or p.name }}" class="project-selector-cb" onchange="updateProjectCounter()" style="margin-top:3px; width:18px; height:18px; accent-color:#10b981; cursor:pointer;" {% if (p.id in resume_detail.active_project_ids) or (p.name in resume_detail.active_project_ids) or (p.short_name in resume_detail.active_project_ids) %}checked{% endif %}>
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <strong style="color:#f8fafc; font-size:14px;">{{ p.name }}</strong>
+                    {% if p.link %}
+                    <a href="{{ p.link }}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px; color:#10b981; text-decoration:none; background:#0e1015; padding:2px 6px; border-radius:4px; border:1px solid #272b38;">Live Link</a>
+                    {% endif %}
+                  </div>
+                  <div style="font-size:12px; color:#94a3b8; margin-top:2px; font-style:italic;">{{ p.subtitle }}</div>
+                  <div style="font-size:11px; color:#cbd5e1; margin-top:6px; line-height:1.4;">{{ p.bullet[:130] }}{% if p.bullet|length > 130 %}...{% endif %}</div>
+                  <textarea data-bullet-for="{{ p.id or p.name }}" data-original="{{ (resume_detail.project_bullets.get(p.id or p.name, p.bullet or ''))|e }}" rows="2" onclick="event.stopPropagation()" placeholder="Edit project bullet (one line)..." style="width:100%; margin-top:6px; background:#0e1015; border:1px solid #272b38; border-radius:6px; color:var(--text); padding:6px 8px; font-size:11px; resize:vertical;">{{ resume_detail.project_bullets.get(p.id or p.name, p.bullet or '') }}</textarea>
+                  <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">
+                    {% for s in p.skills %}
+                    <span style="background:#0e1015; color:#10b981; border:1px solid #272b38; font-size:10px; padding:1px 5px; border-radius:3px;">{{ s }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 6: EDUCATION, CERTS & LINKS -->
+      <div id="custPane_education" class="cust-tab-pane" style="display:none;">
+        <!-- Education -->
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px; margin-bottom:16px;">
+          <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block; font-size:14px;">Education</label>
+          <div class="muted" style="font-size:12px; margin-bottom:12px;">Degree, institution, dates, and campus location.</div>
+
+          {% set edu = (resume_detail.all_educations[0] if (resume_detail and resume_detail.all_educations) else {}) %}
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap:12px; background:#181b24; border:1px solid #272b38; border-radius:8px; padding:14px;">
+            <div>
+              <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Degree / Program</label>
+              <input type="text" name="edu_degree" value="{{ edu.degree or 'Bachelor’s in Computer Science' }}" placeholder="e.g. Bachelor’s in Computer Science" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">University / Institution</label>
+              <input type="text" name="edu_institution" value="{{ edu.institution or 'FAST National University of Computer and Emerging Sciences' }}" placeholder="e.g. FAST National University" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Dates (e.g. 2023 – present)</label>
+              <input type="text" name="edu_dates" value="{% if edu.start and (edu.end or edu.graduation_date) %}{{ edu.start }} – {{ 'present' if edu.status == 'in_progress' else (edu.end or edu.graduation_date) }}{% elif edu.graduation_date %}{{ edu.graduation_date }}{% else %}2023 – present{% endif %}" placeholder="e.g. 2023 – present" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Location / Campus</label>
+              <input type="text" name="edu_location" value="{{ edu.location or 'Pakistan' }}" placeholder="e.g. Pakistan or Islamabad, PK" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:13px;">
+            </div>
+          </div>
+
+          <details style="margin-top:10px; font-size:12px;">
+            <summary style="color:#64748b; cursor:pointer; font-weight:500;">Advanced: Raw Education HTML (optional override)</summary>
+            <div style="margin-top:6px;">
+              <textarea name="education_html" rows="3" placeholder="Leave blank to use structured inputs above" style="width:100%; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;"></textarea>
+            </div>
+          </details>
+        </div>
+
+        <!-- Certifications -->
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px; margin-bottom:16px;">
+          <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block; font-size:14px;">Certifications</label>
+          <div class="muted" style="font-size:12px; margin-bottom:6px;">One certification per line as <code>Name | Organization | https://link</code>. Section is omitted when empty.</div>
+          <textarea name="certifications_text" rows="3" placeholder="e.g. AWS Certified Machine Learning – Specialty | Amazon Web Services | https://credly.com/..." style="width:100%; min-height:64px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;">{{ resume_detail.certifications_text }}</textarea>
+        </div>
+
+        <!-- Links -->
+        <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
+          <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block; font-size:14px;">Profile Links (Header)</label>
+          <div class="muted" style="font-size:12px; margin-bottom:8px;">Header link URLs for your resume.</div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap:8px; margin-bottom:8px;">
+            <label style="font-size:12px; color:#94a3b8;">LinkedIn<input type="url" name="link_linkedin" value="{{ resume_detail.link_urls.get('linkedin', '') }}" placeholder="https://linkedin.com/in/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">GitHub<input type="url" name="link_github" value="{{ resume_detail.link_urls.get('github', '') }}" placeholder="https://github.com/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">Portfolio<input type="url" name="link_portfolio" value="{{ resume_detail.link_urls.get('portfolio', '') }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">Website<input type="url" name="link_website" value="{{ resume_detail.link_urls.get('website', '') }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ACTION BAR -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid #272b38;">
+        <span id="pageWarning" class="muted" style="font-size:12px;">A4 page formatting is automatically preserved.</span>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          {% if 'custom' in (a.resume_path or '') %}
+            <span style="color:#eab308; font-size:12px; font-weight:500;">Custom PDF attached. Recreate disabled.</span>
+            <button type="button" class="btn" disabled style="margin:0; padding:10px 22px; font-size:14px; font-weight:600; opacity:0.45; cursor:not-allowed; background:#374151; color:#9ca3af;" title="Custom PDF is attached.">
+              Recreate &amp; Optimize Resume
+            </button>
+          {% else %}
+            <button type="submit" id="btnApplySectionCustomizer" class="btn" style="margin:0; padding:10px 22px; font-size:14px; font-weight:600; background:var(--green); color:#0e1015;">
+              Recreate &amp; Optimize Resume
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- TAB 2: UPLOAD CUSTOM RESUME PDF -->
+  <div id="resumeTabUpload" style="display:none; background:#0e1015; border:1px solid var(--line); border-radius:8px; padding:18px; margin-top:12px;">
+    <h4 style="font-size:15px; margin-bottom:10px;">Upload Custom Resume (PDF)</h4>
+    <form method="post" action="/application/{{ a.id }}/resume/upload" enctype="multipart/form-data" onsubmit="window.showActionOverlay('Uploading Custom Resume', 'Attaching PDF document to application...', ['[1/2] Reading PDF payload...', '[2/2] Synchronizing with application record...']);">
+      <label>Select PDF Document from Computer</label>
+      <input type="file" name="custom_resume" accept="application/pdf" required>
+      <div class="hint">Uploading a custom resume will attach this specific PDF file to the application and use it when dispatching the email.</div>
+
+      <div style="margin-top:14px; text-align:right;">
+        <button type="submit" class="btn" style="margin:0;">Attach Custom PDF to Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TAILORED RESUME PREVIEW -->
+<h3 style="margin:24px 0 8px;">Tailored Resume Preview</h3>
+{% if a.resume_path %}
+  <div style="background:#0e1015; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:24px;">
+    <!-- Preview Toolbar -->
+    <div class="resume-toolbar-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:8px 12px; background:#13151c; border:1px solid #272b38; border-radius:8px; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="muted" style="font-size:13px;">Resume Preview</span>
+      </div>
+      <div class="resume-toolbar-actions" style="display:flex; align-items:center; gap:8px;">
+        <button type="button" onclick="adjustResumeZoom(-0.1)" class="btn secondary" style="margin:0; padding:4px 10px; font-size:12px;" title="Zoom Out">− Zoom</button>
+        <button type="button" onclick="adjustResumeZoom(0)" class="btn secondary" style="margin:0; padding:4px 10px; font-size:12px;" title="Reset Zoom">Fit 100%</button>
+        <button type="button" onclick="adjustResumeZoom(0.1)" class="btn secondary" style="margin:0; padding:4px 10px; font-size:12px;" title="Zoom In">+ Zoom</button>
+        <a class="btn secondary" href="/application/{{ a.id }}/resume.html" target="_blank" style="margin:0; padding:4px 10px; font-size:12px;">Full Tab ↗</a>
+        <a class="btn" href="/application/{{ a.id }}/resume.pdf" target="_blank" style="margin:0; padding:4px 12px; font-size:12px; text-decoration:none;">Download PDF ↗</a>
+      </div>
+    </div>
+
+    {% if 'custom' in a.resume_path %}
+      <div class="card" style="padding:16px; margin-bottom:12px; color:var(--text); background:#1a1429; border:1px solid #4a286e;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <strong>Custom uploaded PDF is currently attached</strong> for this application.
+            <div class="muted" style="font-size:12px; margin-top:2px;">This application is using your uploaded PDF document instead of the AI-tailored resume.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <a class="btn" href="/application/{{ a.id }}/resume.pdf" target="_blank" style="margin:0; font-size:13px;">Open Uploaded PDF ↗</a>
+            <form method="post" action="/application/{{ a.id }}/resume/revert-custom" style="display:inline;" onsubmit="return confirm('Remove uploaded custom PDF and switch back to the AI-tailored resume?');">
+              <button type="submit" class="btn secondary" style="margin:0; font-size:13px; color:#f87171; border-color:#7f1d1d;">Revert to Generated Resume</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div id="resumeCanvasWrapper" style="display:flex; justify-content:center; background:#080d13; padding:18px 8px; border-radius:8px; overflow-x:auto;">
+        <div id="resumeSheetContainer" style="width:100%; max-width:820px; transition:max-width 0.2s ease; margin:0 auto;">
+          <iframe id="resumeIframe" src="/application/{{ a.id }}/resume.html?t={{ a.template_id or current_user.selected_template_id or 'apex_modern' }}&v={{ (a.updated_at.timestamp() if a.updated_at else 1)|int }}" onload="try{ const doc = this.contentWindow.document; const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight); if(h > 1200){ this.style.height = (h + 40) + 'px'; } else { this.style.height = '1160px'; } }catch(e){}" style="width:100%; height:1160px; border:1px solid #272b38; border-radius:6px; background:#fff; display:block; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="card" style="padding:16px; color:var(--muted); margin-bottom:24px;">
+    Resume generation in progress or not available for this record.
+  </div>
+{% endif %}
+
+<!-- VERSION HISTORY -->
+{# Phase 16 (FR-R-03): list every generation + manual edit; restore re-applies #}
+{# the user's current manual-edit locks on top (locks win). #}
+<h3 style="margin:22px 0 8px;">Version History</h3>
+<div class="card" style="padding:16px; margin-bottom:24px;">
+  {% if versions %}
+  <div class="table-responsive">
+    <table style="min-width:560px;">
+      <thead>
+        <tr>
+          <th style="width:18%;">Version</th>
+          <th style="width:14%;">ATS</th>
+          <th style="width:28%;">Created</th>
+          <th style="width:40%; text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in versions %}
+        <tr>
+          <td><strong>v{{ v.version_no }}</strong>
+            {% if loop.first %}<span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230; font-size:11px;">current</span>{% endif %}
+          </td>
+          <td>
+            {% if v.ats_score %}
+              <span class="badge" style="font-weight:700; {% if v.ats_score >= 80 %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+                {{ "%.0f"|format(v.ats_score) }}
+              </span>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td class="muted" style="font-size:12px;">{{ v.created_at.strftime("%Y-%m-%d %H:%M") if v.created_at else "" }}</td>
+          <td style="text-align:right;">
+            {% if not loop.first %}
+            <form method="post" action="/application/{{ a.id }}/resume/restore/{{ v.version_no }}" style="display:inline;" onsubmit="return confirm('Restore v{{ v.version_no }} as the current resume? Your manual edits will be re-applied on top.');">
+              <button type="submit" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px;">Restore</button>
+            </form>
+            <form method="post" action="/application/{{ a.id }}/resume/version/{{ v.version_no }}/delete" style="display:inline; margin-left:6px;" onsubmit="return window.confirmDelete(event, this, 'resume version v{{ v.version_no }}');">
+              <button type="submit" class="btn secondary" style="margin:0; padding:6px 12px; font-size:12px; color:#f87171; border-color:#7f1d1d;">Delete</button>
+            </form>
+            {% else %}
+            <span class="muted" style="font-size:12px;">in use</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="muted" style="font-size:12px; margin-top:10px;">Restoring re-applies your manual-edit locks on top of the restored version, and saves the restore itself as a new version — so every restore is undoable.</div>
+  {% else %}
+  <div class="muted" style="font-size:13px;">No versions recorded yet. Generate or edit the resume to create the first version.</div>
+  {% endif %}
+</div>
+
+<!-- JOB DESCRIPTION -->
+<h3 style="margin:22px 0 8px;">Job Description</h3>
+<div class="emailbox" style="max-height:260px; overflow:auto; margin-bottom:24px; white-space: pre-wrap; font-family: inherit; font-size: 13.5px; line-height: 1.55;">{{ a.jd_text }}</div>
+
+<div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+  <a class="btn secondary" href="/workspace">← Back to queue</a>
+  <form method="post" action="/application/{{ a.id }}/delete" style="display:inline;">
+    <button type="button" class="btn secondary" style="margin:0; border-color:#5a262e; color:#ff7a88; font-size:13px;" title="Delete Application" data-title="{{ a.job_title }} at {{ a.company }}" onclick="confirmDelete(event, this.form, this.getAttribute('data-title'))">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Delete Application
+    </button>
+  </form>
+</div>
+
+<script>
+async function saveEmailChangesAsync(event, form) {
+  event.preventDefault();
+  const btn = document.getElementById("btnSaveEmail") || form.querySelector('button[type="submit"]');
+  const originalText = btn ? btn.innerHTML : "Save Email Changes";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span style="display:inline-block; width:12px; height:12px; border:2px solid #9ca3af; border-top-color:#10b981; border-radius:50%; margin-right:6px; animation:appSpinner 0.8s linear infinite; vertical-align:middle;"></span> Saving...
+    `;
+  }
+
+  try {
+    const formData = new FormData(form);
+    const response = await fetch(form.action, {
+      method: "POST",
+      body: formData,
+      headers: {
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+
+    if (response.ok) {
+      const emailVal = (document.getElementById("editEmailInput")?.value || "").trim();
+      const subjectVal = (document.getElementById("editSubjectInput")?.value || "").trim();
+      const bodyVal = document.getElementById("emailBodyText")?.value || "";
+      
+      const payloadEmail = document.getElementById("sendPayloadEmail");
+      const payloadSubject = document.getElementById("sendPayloadSubject");
+      const payloadBody = document.getElementById("sendPayloadBody");
+      if (payloadEmail) payloadEmail.value = emailVal;
+      if (payloadSubject) payloadSubject.value = subjectVal;
+      if (payloadBody) payloadBody.value = bodyVal;
+
+      const bodyEl = document.getElementById("emailBodyText");
+      if (bodyEl) {
+        bodyEl.style.transition = "box-shadow 0.3s ease, border-color 0.3s ease";
+        bodyEl.style.borderColor = "#10b981";
+        bodyEl.style.boxShadow = "0 0 14px rgba(16, 185, 129, 0.35)";
+        setTimeout(() => {
+          bodyEl.style.borderColor = "";
+          bodyEl.style.boxShadow = "";
+        }, 1200);
+      }
+
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Email Saved", "Application email changes saved successfully.", "success");
+      }
+    } else {
+      const err = await response.json().catch(() => ({}));
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Save Failed", err.detail || "Unable to save email changes.", "error");
+      }
+    }
+  } catch (err) {
+    if (window.showCustomAlert) {
+      window.showCustomAlert("Network Error", "Could not connect to server to save changes.", "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+}
+
+async function aiRegenerateEmailAsync(event, form) {
+  event.preventDefault();
+  const instructionEl = document.getElementById("aiEmailInstructionInput");
+  const instruction = (instructionEl ? instructionEl.value : "").trim();
+  if (!instruction) {
+    if (window.showCustomAlert) {
+      window.showCustomAlert("Instruction Needed", "Please provide instructions for the AI on how to rewrite your email.", "info");
+    }
+    if (instructionEl) instructionEl.focus();
+    return;
+  }
+
+  const btn = document.getElementById("btnAiRegenEmail") || form.querySelector('button[type="submit"]');
+  const originalText = btn ? btn.innerHTML : "Regenerate Email with AI";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span style="display:inline-block; width:12px; height:12px; border:2px solid #0e1015; border-top-color:#ffffff; border-radius:50%; margin-right:6px; animation:appSpinner 0.8s linear infinite; vertical-align:middle;"></span> AI Rewriting Email...
+    `;
+  }
+
+  try {
+    const formData = new FormData(form);
+    const response = await fetch(form.action, {
+      method: "POST",
+      body: formData,
+      headers: {
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.drafted_email) {
+        const bodyEl = document.getElementById("emailBodyText");
+        if (bodyEl) {
+          bodyEl.value = data.drafted_email;
+          bodyEl.style.transition = "box-shadow 0.4s ease, border-color 0.4s ease";
+          bodyEl.style.borderColor = "#10b981";
+          bodyEl.style.boxShadow = "0 0 16px rgba(16, 185, 129, 0.45)";
+          setTimeout(() => {
+            bodyEl.style.borderColor = "";
+            bodyEl.style.boxShadow = "";
+          }, 1800);
+        }
+
+        const payloadBody = document.getElementById("sendPayloadBody");
+        if (payloadBody) payloadBody.value = data.drafted_email;
+
+        if (instructionEl) instructionEl.value = "";
+
+        if (window.showCustomAlert) {
+          window.showCustomAlert("Email Regenerated", "AI has updated your cover letter according to instructions.", "success");
+        }
+      } else {
+        if (window.showCustomAlert) {
+          window.showCustomAlert("Regeneration Complete", "Email updated.", "success");
+        }
+      }
+    } else {
+      const err = await response.json().catch(() => ({}));
+      if (window.showCustomAlert) {
+        window.showCustomAlert("Regeneration Failed", err.detail || "AI rewriting service returned an error.", "error");
+      }
+    }
+  } catch (err) {
+    if (window.showCustomAlert) {
+      window.showCustomAlert("Network Error", "Could not connect to AI service.", "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+}
+
+function openSendConfirmDialog() {
+  const editEmailEl = document.getElementById("editEmailInput") || document.querySelector('input[type="text"][name="email"]');
+  const editSubjectEl = document.getElementById("editSubjectInput") || document.querySelector('input[type="text"][name="subject"]');
+  const editBodyEl = document.getElementById("emailBodyText");
+
+  let recipientEmail = (editEmailEl ? editEmailEl.value.trim() : "") || {{ (a.email or "")|tojson }};
+  let emailSubject = (editSubjectEl ? editSubjectEl.value.trim() : "") || {{ (a.subject or default_subject or "")|tojson }};
+  let emailBody = editBodyEl ? editBodyEl.value : "";
+  // Escaper for user-controlled values interpolated into modal HTML (XSS).
+  const escHtml = window.escapeHtml || ((v) => String(v == null ? "" : v));
+
+  // Check if recipient email is missing or is an internal placeholder
+  const isInvalidEmail = !recipientEmail || recipientEmail.includes("internal") || recipientEmail.includes("portal-application") || !recipientEmail.includes("@") || !recipientEmail.includes(".");
+
+  if (isInvalidEmail) {
+    // Open custom modal prompting for the recipient email directly!
+    window.openConfirmModal({
+      title: "Recipient Email Needed",
+      body: `
+        <div style="font-size:14px; margin-bottom:12px; color:#f1f5f9;">
+          This application doesn't have a recipient employer email address on file yet.
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:12px; color:#94a3b8; margin-bottom:6px; font-weight:600;">ENTER EMPLOYER / RECRUITER EMAIL:</label>
+          <input type="email" id="modalPromptEmailInput" placeholder="e.g. hr@company.com or careers@domain.com" style="width:100%; padding:10px 14px; border-radius:8px; background:#0e1015; border:1px solid #10b981; color:#ffffff; font-size:14px; box-sizing:border-box;" value="${escHtml(recipientEmail && !recipientEmail.includes('internal') ? recipientEmail : '')}">
+        </div>
+        <div style="background:#13151c; border:1px solid #272b38; color:#94a3b8; padding:10px 14px; border-radius:8px; font-size:12px; line-height:1.4;">
+          <strong>Tip:</strong> If this position requires applying on an external company careers portal instead of via email, use <strong>Mark as Applied (Portal)</strong>.
+        </div>
+      `,
+      confirmText: "Save Email & Continue Dispatch",
+      confirmBg: "var(--green)",
+      confirmColor: "#0e1015",
+      onConfirm: () => {
+        const promptInput = document.getElementById("modalPromptEmailInput");
+        const enteredEmail = promptInput ? promptInput.value.trim() : "";
+        if (!enteredEmail || !enteredEmail.includes("@") || !enteredEmail.includes(".") || enteredEmail.includes("internal")) {
+          window.showCustomAlert("Invalid Email", "Please provide a valid recipient email address containing '@' and a domain.", "error");
+          if (promptInput) {
+            promptInput.style.borderColor = "#f87171";
+            promptInput.focus();
+          }
+          return false;
+        }
+        if (editEmailEl) editEmailEl.value = enteredEmail;
+        window.closeConfirmModal();
+        setTimeout(() => {
+          showDispatchConfirmModal(enteredEmail, emailSubject, emailBody);
+        }, 100);
+        return false;
+      }
+    });
+
+    setTimeout(() => {
+      const promptInput = document.getElementById("modalPromptEmailInput");
+      if (promptInput) promptInput.focus();
+    }, 120);
+    return;
+  }
+
+  showDispatchConfirmModal(recipientEmail, emailSubject, emailBody);
+}
+
+function showDispatchConfirmModal(recipientEmail, emailSubject, emailBody) {
+  const testMode = {{ "true" if test_mode else "false" }};
+  const testRecipient = {{ test_recipient|tojson }};
+
+  // Escape user-controlled values before interpolating into modal HTML (XSS).
+  const esc = window.escapeHtml || ((v) => String(v == null ? "" : v));
+  const safeRecipient = esc(recipientEmail);
+  const safeSubject = esc(emailSubject);
+  const safeTestRecipient = esc(testRecipient);
+
+  const modeBadge = testMode
+    ? `<div style="background:#261f0e; border:1px solid #6b4d0e; color:#fde047; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:14px; line-height:1.4;">
+        <strong>Test Mode Active:</strong> Message will safely redirect to <strong>${safeTestRecipient}</strong> (your test inbox). The intended employer address (<em>${safeRecipient}</em>) will be saved in header.
+       </div>`
+    : `<div style="background:#2b1215; border:1px solid #7f1d1d; color:#fca5a5; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:14px; line-height:1.4;">
+        <strong>Live Dispatch Mode:</strong> Message and tailored PDF will be delivered directly to <strong>${safeRecipient}</strong>.
+       </div>`;
+
+  const bodyContent = `
+    <div style="font-size:14px; margin-bottom:12px; color:#e2e8f0;">
+      Are you ready to dispatch this tailored application?
+    </div>
+    <div style="background:#0e1015; border:1px solid #272b38; border-radius:10px; padding:14px 16px; font-size:13px; line-height:1.6;">
+      <div style="margin-bottom:6px;"><span class="muted">To:</span> <strong style="color:var(--accent); font-family:monospace; margin-left:6px;">${safeRecipient}</strong></div>
+      <div style="margin-bottom:6px;"><span class="muted">Subject:</span> <span style="color:#f1f5f9; margin-left:6px;">${safeSubject}</span></div>
+      <div><span class="muted">Attached:</span> <span style="color:var(--green); font-weight:600; margin-left:6px;">Resume PDF</span></div>
+    </div>
+    ${modeBadge}
+  `;
+
+  window.openConfirmModal({
+    title: "Confirm Application Dispatch",
+    body: bodyContent,
+    confirmText: "Send Now",
+    confirmBg: "var(--green)",
+    confirmColor: "#0e1015",
+    onConfirm: () => {
+      const emailPayload = document.getElementById("sendPayloadEmail");
+      const subjectPayload = document.getElementById("sendPayloadSubject");
+      const bodyPayload = document.getElementById("sendPayloadBody");
+
+      if (emailPayload) emailPayload.value = recipientEmail;
+      if (subjectPayload) subjectPayload.value = emailSubject;
+      if (bodyPayload) bodyPayload.value = emailBody;
+
+      window.showActionOverlay(
+        "Dispatching Application...",
+        "Compiling tailored PDF & transmitting message via SMTP...",
+        [
+          "[1/4] Compiling tailored A4 PDF...",
+          "[2/4] Connecting to SMTP server & verifying credentials...",
+          "[3/4] Transmitting message with attached PDF resume...",
+          "[4/4] Updating application status & synchronizing cloud..."
+        ]
+      );
+      const sendForm = document.getElementById("approveSendForm");
+      if (sendForm) {
+        try {
+          HTMLFormElement.prototype.submit.call(sendForm);
+        } catch (_) {
+          if (typeof sendForm.submit === "function") sendForm.submit();
+        }
+      }
+    }
+  });
+}
+
+function copyEmailBody() {
+  const text = document.getElementById("emailBodyText").value;
+  navigator.clipboard.writeText(text).then(() => {
+    window.showCustomAlert("Copied to Clipboard", "Cover email text copied to clipboard successfully!", "success");
+  }).catch(() => {
+    window.showCustomAlert("Copy Failed", "Please copy manually from the editor box.", "error");
+  });
+}
+
+let currentActiveTab = null;
+
+function toggleResumeTab(tab) {
+  const tabEdit = document.getElementById("resumeTabEdit");
+  const tabUpload = document.getElementById("resumeTabUpload");
+  const btnEdit = document.getElementById("tabBtnEdit");
+  const btnUpload = document.getElementById("tabBtnUpload");
+  const btnEditText = document.getElementById("tabBtnEditText");
+  const btnUploadText = document.getElementById("tabBtnUploadText");
+
+  if (currentActiveTab === tab) {
+    currentActiveTab = null;
+    if (tabEdit) tabEdit.style.display = "none";
+    if (tabUpload) tabUpload.style.display = "none";
+    if (btnEdit) { btnEdit.style.background = ""; btnEdit.style.borderColor = ""; }
+    if (btnUpload) { btnUpload.style.background = ""; btnUpload.style.borderColor = ""; }
+    if (btnEditText) btnEditText.innerText = "Open Section Customizer";
+    if (btnUploadText) btnUploadText.innerText = "Upload Custom PDF";
+    return;
+  }
+
+  currentActiveTab = tab;
+  if (tab === 'edit' || tab === 'customizer') {
+    if (tabEdit) tabEdit.style.display = "block";
+    if (tabUpload) tabUpload.style.display = "none";
+    if (btnEdit) { btnEdit.style.background = "#26333f"; btnEdit.style.borderColor = "#10b981"; }
+    if (btnUpload) { btnUpload.style.background = ""; btnUpload.style.borderColor = ""; }
+    if (btnEditText) btnEditText.innerText = "Close Section Customizer";
+    if (btnUploadText) btnUploadText.innerText = "Upload Custom PDF";
+  } else if (tab === 'upload') {
+    if (tabEdit) tabEdit.style.display = "none";
+    if (tabUpload) tabUpload.style.display = "block";
+    if (btnEdit) { btnEdit.style.background = ""; btnEdit.style.borderColor = ""; }
+    if (btnUpload) { btnUpload.style.background = "#26333f"; btnUpload.style.borderColor = "#10b981"; }
+    if (btnEditText) btnEditText.innerText = "Open Section Customizer";
+    if (btnUploadText) btnUploadText.innerText = "Close Upload Box";
+  }
+}
+
+function showResumeTab(tab) {
+  toggleResumeTab(tab);
+}
+
+function toggleAllCategories(checked) {
+  const cbs = document.querySelectorAll(".cat-selector-cb");
+  cbs.forEach(cb => { cb.checked = checked; });
+  syncSkillsJson();
+}
+
+function removeSubSkill(btn) {
+  const pill = btn.closest('.skill-pill-tag');
+  if (!pill) return;
+  const card = pill.closest('.skills-category-card');
+  const catName = pill.dataset.cat || card.dataset.cat;
+  const skillName = pill.dataset.skill;
+  const inactiveContainer = card.querySelector('.inactive-skills-container');
+  
+  pill.remove();
+  
+  if (inactiveContainer && skillName) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'pill-add-chip';
+    chip.dataset.cat = catName;
+    chip.dataset.skill = skillName;
+    chip.title = `Click to add ${skillName}`;
+    chip.style.cssText = 'background:#131c28; color:#94a3b8; border:1px dashed #334155; font-size:10px; padding:2px 6px; border-radius:4px; cursor:pointer; margin-right:4px; transition:all 0.15s ease;';
+    chip.innerText = '＋ ' + skillName;
+    chip.onclick = function() { addSubSkill(this); };
+    inactiveContainer.appendChild(chip);
+  }
+  syncSkillsJson();
+}
+
+function addSubSkill(chipBtn) {
+  const card = chipBtn.closest('.skills-category-card');
+  const catName = chipBtn.dataset.cat || card.dataset.cat;
+  const skillName = chipBtn.dataset.skill || chipBtn.innerText.replace(/^＋\s*/, '').trim();
+  const activeContainer = card.querySelector('.active-pills-container');
+  
+  chipBtn.remove();
+  
+  const pill = document.createElement('span');
+  pill.className = 'skill-pill-tag active-pill';
+  pill.dataset.cat = catName;
+  pill.dataset.skill = skillName;
+  pill.style.cssText = 'display:inline-flex; align-items:center; gap:4px; background:#0f172a; color:#38bdf8; border:1px solid #1e293b; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:500;';
+  // skillName can be user-typed (custom skill input) — escape before innerHTML (XSS).
+  const safeSkillName = window.escapeHtml ? window.escapeHtml(skillName) : skillName;
+  pill.innerHTML = `${safeSkillName} <button type="button" class="pill-remove-btn" onclick="removeSubSkill(this)" title="Remove '${safeSkillName}'" style="background:none; border:none; color:#94a3b8; font-size:11px; cursor:pointer; padding:0 2px; line-height:1;">✕</button>`;
+  activeContainer.appendChild(pill);
+  
+  syncSkillsJson();
+}
+
+function addCustomSubSkill(triggerEl) {
+  const card = triggerEl.closest('.skills-category-card');
+  const catName = card.dataset.cat;
+  const inputEl = card.querySelector('.custom-skill-input');
+  const skillName = (inputEl ? inputEl.value : '').trim();
+  if (!skillName) return;
+  
+  const activeContainer = card.querySelector('.active-pills-container');
+  const existing = Array.from(activeContainer.querySelectorAll('.skill-pill-tag')).map(el => (el.dataset.skill || '').toLowerCase());
+  if (!existing.includes(skillName.toLowerCase())) {
+    const pill = document.createElement('span');
+    pill.className = 'skill-pill-tag active-pill';
+    pill.dataset.cat = catName;
+    pill.dataset.skill = skillName;
+    pill.style.cssText = 'display:inline-flex; align-items:center; gap:4px; background:#0f172a; color:#38bdf8; border:1px solid #1e293b; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:500;';
+    // skillName can be user-typed (custom skill input) — escape before innerHTML (XSS).
+  const safeSkillName = window.escapeHtml ? window.escapeHtml(skillName) : skillName;
+  pill.innerHTML = `${safeSkillName} <button type="button" class="pill-remove-btn" onclick="removeSubSkill(this)" title="Remove '${safeSkillName}'" style="background:none; border:none; color:#94a3b8; font-size:11px; cursor:pointer; padding:0 2px; line-height:1;">✕</button>`;
+    activeContainer.appendChild(pill);
+  }
+  if (inputEl) inputEl.value = '';
+  syncSkillsJson();
+}
+
+function syncSkillsJson() {
+  const cards = document.querySelectorAll('.skills-category-card');
+  const skillsMap = {};
+  cards.forEach(card => {
+    const catName = card.dataset.cat;
+    const isChecked = card.querySelector('.cat-selector-cb')?.checked ?? true;
+    const activePills = Array.from(card.querySelectorAll('.skill-pill-tag'));
+    const skills = activePills.map(p => p.dataset.skill.trim()).filter(Boolean);
+    
+    const countBadge = card.querySelector('.cat-pill-count');
+    if (countBadge) {
+      countBadge.innerText = skills.length + (isChecked ? ' active' : ' (off)');
+      countBadge.style.opacity = isChecked ? '1' : '0.6';
+    }
+    
+    card.style.opacity = isChecked ? '1' : '0.6';
+    
+    if (isChecked) {
+      skillsMap[catName] = skills;
+    }
+  });
+  
+  const jsonInput = document.getElementById('skillsByCategoryJson');
+  if (jsonInput) {
+    jsonInput.value = JSON.stringify(skillsMap);
+  }
+}
+
+// Phase 10 (§U.13): collect only CHANGED per-project / per-experience bullets.
+function syncBulletJson() {
+  const pb = {};
+  document.querySelectorAll('[data-bullet-for]').forEach(ta => {
+    const cur = (ta.value || '').trim();
+    const orig = (ta.dataset.original || '').trim();
+    if (cur && cur !== orig) pb[ta.dataset.bulletFor] = cur;
+  });
+  const pj = document.getElementById('projectBulletsJson');
+  if (pj) pj.value = JSON.stringify(pb);
+
+  const eb = {};
+  document.querySelectorAll('[data-expbullets-for]').forEach(ta => {
+    const cur = (ta.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const orig = (ta.dataset.original || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (cur.length && cur.join('\n') !== orig.join('\n')) eb[ta.dataset.expbulletsFor] = cur;
+  });
+  const ej = document.getElementById('experienceBulletsJson');
+  if (ej) ej.value = JSON.stringify(eb);
+}
+
+function updateExperienceCounter() {
+  const cbs = document.querySelectorAll(".exp-selector-cb");
+  let count = 0;
+  cbs.forEach(cb => { if (cb.checked) count++; });
+  const countEl = document.getElementById("selExpCount");
+  if (countEl) countEl.innerText = count;
+}
+
+function onHubProjectCountChange(count) {
+  if (!count || isNaN(count)) return;
+  applyProjectCountSelection(count);
+}
+
+function applyProjectCountSelection(count) {
+  if (!count || isNaN(count)) return;
+  const cbs = document.querySelectorAll(".project-selector-cb");
+  cbs.forEach((cb, idx) => {
+    cb.checked = (idx < count);
+  });
+  updateProjectCounter();
+}
+
+function updateProjectCounter() {
+  const cbs = document.querySelectorAll(".project-selector-cb");
+  let count = 0;
+  cbs.forEach(cb => { if (cb.checked) count++; });
+  const countEl = document.getElementById("selProjCount");
+  if (countEl) countEl.innerText = count;
+
+  // Sync both dropdowns if count matches
+  const selectEl = document.getElementById("projectCountSelect");
+  if (selectEl) {
+    for (let i = 0; i < selectEl.options.length; i++) {
+      if (parseInt(selectEl.options[i].value, 10) === count) {
+        selectEl.selectedIndex = i;
+        break;
+      }
+    }
+  }
+  const hubSelectEl = document.getElementById("hubProjectCountSelect");
+  if (hubSelectEl) {
+    for (let i = 0; i < hubSelectEl.options.length; i++) {
+      if (parseInt(hubSelectEl.options[i].value, 10) === count) {
+        hubSelectEl.selectedIndex = i;
+        break;
+      }
+    }
+  }
+
+  const warnEl = document.getElementById("pageWarning");
+  if (warnEl) {
+    if (count > 6) {
+      warnEl.innerHTML = "<span style='color:#f59e0b; font-weight:600;'>Notice: " + count + " projects selected. More than 6 projects may push content into a 2nd page. (Recommended: 4–6)</span>";
+    } else if (count < 4) {
+      warnEl.innerHTML = "<span style='color:#38bdf8;'>Notice: " + count + " projects selected. (Minimum recommended: 4 projects)</span>";
+    } else {
+      warnEl.innerHTML = "<span style='color:#34d399;'>Optimal: " + count + " projects selected for 1-page A4 layout.</span>";
+    }
+  }
+}
+
+// CUSTOMIZER SUB-TAB NAVIGATION
+function switchCustSubtab(tabKey) {
+  const panes = ["sequence", "template", "summary", "skills", "experience", "projects", "education"];
+  panes.forEach(key => {
+    const pane = document.getElementById("custPane_" + key);
+    const btn = document.getElementById("custSubtab_" + key);
+    if (pane) pane.style.display = (key === tabKey) ? "block" : "none";
+    if (btn) {
+      if (key === tabKey) {
+        btn.style.background = "#1e293b";
+        btn.style.borderColor = "#10b981";
+        btn.style.color = "#f8fafc";
+        btn.style.fontWeight = "600";
+      } else {
+        btn.style.background = "#13151c";
+        btn.style.borderColor = "#272b38";
+        btn.style.color = "#94a3b8";
+        btn.style.fontWeight = "500";
+      }
+    }
+  });
+}
+
+// SECTION REORDERING & CUSTOM SEQUENCE LOGIC
+let currentSectionOrder = {{ current_section_order|tojson if current_section_order else '["summary", "experience", "education", "skills", "projects", "certifications"]' }};
+
+const SECTION_META = {
+  summary: { title: "Profile Summary", desc: "Professional summary statement" },
+  experience: { title: "Employment History", desc: "Work experience and job roles" },
+  skills: { title: "Skills & Technical Stack", desc: "Technical skill categories and keywords" },
+  projects: { title: "Key Projects", desc: "Featured technical and software projects" },
+  education: { title: "Education", desc: "Degrees, institutions, dates and campus" },
+  certifications: { title: "Certifications", desc: "Professional credentials and certificates" }
+};
+
+const SECTION_PRESETS = {
+  default: ["summary", "experience", "education", "skills", "projects", "certifications"],
+  experience_first: ["summary", "experience", "projects", "skills", "education", "certifications"],
+  skills_first: ["summary", "skills", "experience", "projects", "education", "certifications"],
+  projects_heavy: ["summary", "projects", "skills", "experience", "education", "certifications"],
+  student: ["summary", "skills", "projects", "education", "experience", "certifications"]
+};
+
+function renderSectionOrderUI() {
+  const container = document.getElementById("sectionOrderContainer");
+  if (!container) return;
+
+  const orderStr = currentSectionOrder.join(",");
+  
+  // Sync hidden inputs for both forms
+  const hubInput = document.getElementById("hubSectionOrderInput");
+  if (hubInput) hubInput.value = orderStr;
+  const editInput = document.getElementById("editSectionOrderInput");
+  if (editInput) editInput.value = orderStr;
+
+  // Update summary badge
+  const badge = document.getElementById("sectionOrderSummaryBadge");
+  if (badge) {
+    const names = currentSectionOrder.map(k => (SECTION_META[k] ? SECTION_META[k].title.split(" ")[0] : k));
+    badge.innerText = "Sequence: " + names.join(" → ");
+  }
+
+  container.innerHTML = "";
+
+  currentSectionOrder.forEach((key, index) => {
+    const meta = SECTION_META[key] || { title: key, desc: "" };
+    const card = document.createElement("div");
+    card.className = "section-order-item";
+    card.dataset.key = key;
+    card.dataset.index = index;
+    card.draggable = true;
+    card.style.cssText = "display:flex; align-items:center; justify-content:space-between; background:#181b24; border:1px solid #272b38; border-radius:8px; padding:10px 14px; cursor:grab; transition:all 0.15s ease;";
+    
+    // Left: Drag handle, index badge, title & desc
+    const left = document.createElement("div");
+    left.style.cssText = "display:flex; align-items:center; gap:12px;";
+    left.innerHTML = `
+      <span style="color:#64748b; font-size:16px; cursor:grab; user-select:none;" title="Drag to reorder">⠿</span>
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#0e1015; border:1px solid #272b38; font-size:11px; font-weight:700; color:#34d399;">${index + 1}</span>
+      <div>
+        <strong style="font-size:13px; color:#f8fafc; display:block;">${meta.title}</strong>
+        <span style="font-size:11px; color:#94a3b8;">${meta.desc}</span>
+      </div>
+    `;
+
+    // Right: Up & Down arrow buttons
+    const right = document.createElement("div");
+    right.style.cssText = "display:flex; align-items:center; gap:6px;";
+    
+    const upBtn = document.createElement("button");
+    upBtn.type = "button";
+    upBtn.className = "btn secondary";
+    upBtn.style.cssText = "padding:4px 8px; font-size:11px; margin:0; line-height:1; min-width:30px;";
+    upBtn.innerHTML = "▲";
+    upBtn.title = "Move section up";
+    upBtn.disabled = (index === 0);
+    if (index === 0) upBtn.style.opacity = "0.3";
+    upBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); moveSection(index, -1); };
+
+    const downBtn = document.createElement("button");
+    downBtn.type = "button";
+    downBtn.className = "btn secondary";
+    downBtn.style.cssText = "padding:4px 8px; font-size:11px; margin:0; line-height:1; min-width:30px;";
+    downBtn.innerHTML = "▼";
+    downBtn.title = "Move section down";
+    downBtn.disabled = (index === currentSectionOrder.length - 1);
+    if (index === currentSectionOrder.length - 1) downBtn.style.opacity = "0.3";
+    downBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); moveSection(index, 1); };
+
+    right.appendChild(upBtn);
+    right.appendChild(downBtn);
+
+    card.appendChild(left);
+    card.appendChild(right);
+
+    // Drag & drop event listeners
+    card.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", index);
+      card.style.opacity = "0.5";
+    });
+    card.addEventListener("dragend", () => {
+      card.style.opacity = "1";
+    });
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      card.style.borderColor = "#10b981";
+    });
+    card.addEventListener("dragleave", () => {
+      card.style.borderColor = "#272b38";
+    });
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      card.style.borderColor = "#272b38";
+      const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+      const toIdx = index;
+      if (!isNaN(fromIdx) && fromIdx !== toIdx) {
+        const item = currentSectionOrder.splice(fromIdx, 1)[0];
+        currentSectionOrder.splice(toIdx, 0, item);
+        renderSectionOrderUI();
+      }
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function moveSection(index, delta) {
+  const targetIndex = index + delta;
+  if (targetIndex < 0 || targetIndex >= currentSectionOrder.length) return;
+  const temp = currentSectionOrder[index];
+  currentSectionOrder[index] = currentSectionOrder[targetIndex];
+  currentSectionOrder[targetIndex] = temp;
+  renderSectionOrderUI();
+}
+
+function applySectionPreset(presetKey) {
+  if (SECTION_PRESETS[presetKey]) {
+    currentSectionOrder = [...SECTION_PRESETS[presetKey]];
+    renderSectionOrderUI();
+  }
+}
+
+// Initialize counters & skill state on page load (starts collapsed by default)
+document.addEventListener("DOMContentLoaded", () => {
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  if (urlTab === 'upload') {
+    toggleResumeTab('upload');
+  } else if (urlTab === 'customizer' || urlTab === 'edit') {
+    toggleResumeTab('edit');
+  }
+  renderSectionOrderUI();
+  updateProjectCounter();
+  updateExperienceCounter();
+  syncSkillsJson();
+});
+
+// Resume Preview Zoom Control
+let currentResumeZoom = 1.0;
+function adjustResumeZoom(delta) {
+  if (delta === 0) {
+    currentResumeZoom = 1.0;
+  } else {
+    currentResumeZoom = Math.min(Math.max(0.7, currentResumeZoom + delta), 1.5);
+  }
+  const container = document.getElementById("resumeSheetContainer");
+  if (container) {
+    container.style.maxWidth = Math.round(820 * currentResumeZoom) + "px";
+  }
+}
+</script>
+{% endblock %}
