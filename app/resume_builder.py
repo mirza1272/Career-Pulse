@@ -18,6 +18,7 @@ import subprocess
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from app import config
 from app.knowledge import Candidate, load_candidate
