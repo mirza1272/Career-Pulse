@@ -11,9 +11,15 @@
       Status: <span class="badge">{{ a.status }}</span>
       {% if a.ats_score %}
         &nbsp;·&nbsp; ATS Score:
-        <span class="badge" style="font-weight:700; {% if a.ats_score >= 87 %}background:#064e3b; color:var(--green); border:1px solid #059669;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+        {% if a.ats_score >= 87 %}
+        <span class="badge" style="font-weight:700; background:#064e3b; color:var(--green); border:1px solid #059669;">
           {{ "%.0f"|format(a.ats_score) }}/100
         </span>
+        {% else %}
+        <span class="badge" style="font-weight:700; background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">
+          {{ "%.0f"|format(a.ats_score) }}/100
+        </span>
+        {% endif %}
         <span class="muted" style="font-size:12px;">(target 87+)</span>
       {% endif %}
     </div>
@@ -75,9 +81,15 @@
     {% if ats %}
     <div class="card">
       <div style="font-weight:700; font-size:15px; margin-bottom:10px;">ATS breakdown <span class="muted" style="font-weight:400; font-size:12px;">— every point traceable</span></div>
-      <div style="font-size:34px; font-weight:800; margin-bottom:12px; color:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};">
+      {% if ats.ats_readiness_score >= 87 %}
+      <div style="font-size:34px; font-weight:800; margin-bottom:12px; color:var(--green);">
         {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:16px; color:#94a3b8;">/100</span>
       </div>
+      {% else %}
+      <div style="font-size:34px; font-weight:800; margin-bottom:12px; color:var(--yellow);">
+        {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:16px; color:#94a3b8;">/100</span>
+      </div>
+      {% endif %}
       <div style="font-size:13px; margin-bottom:6px;"><strong>Parsing safety:</strong> {{ "%.0f"|format(ats.parsing_safety_score) }}/40</div>
       <div style="font-size:13px; margin-bottom:10px;"><strong>Job relevance:</strong> {{ "%.0f"|format(ats.relevance_score) }}/60</div>
       {% if ats.matched_skills %}

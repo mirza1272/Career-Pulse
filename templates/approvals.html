@@ -5,13 +5,25 @@
 
 {# Phase 14: status filter cards. Legacy 'pending' rows count under Draft. #}
 <div class="cards" style="margin-bottom:16px;">
-  <a href="/workspace?status=all" class="card" style="text-decoration:none; {% if active_status == 'all' %}border-color:var(--green);{% endif %}">
+  {% if active_status == 'all' %}
+  <a href="/workspace?status=all" class="card" style="text-decoration:none; border-color:var(--green);">
     <div class="label">All</div><div class="value">{{ counts.all }}</div>
   </a>
-  {% for st in status_order %}
-  <a href="/workspace?status={{ st }}" class="card" style="text-decoration:none; {% if active_status == st %}border-color:var(--green);{% endif %}">
-    <div class="label">{{ st.replace('_', ' ').title() }}</div><div class="value">{{ counts[st] }}</div>
+  {% else %}
+  <a href="/workspace?status=all" class="card" style="text-decoration:none;">
+    <div class="label">All</div><div class="value">{{ counts.all }}</div>
   </a>
+  {% endif %}
+  {% for st in status_order %}
+    {% if active_status == st %}
+    <a href="/workspace?status={{ st }}" class="card" style="text-decoration:none; border-color:var(--green);">
+      <div class="label">{{ st.replace('_', ' ').title() }}</div><div class="value">{{ counts[st] }}</div>
+    </a>
+    {% else %}
+    <a href="/workspace?status={{ st }}" class="card" style="text-decoration:none;">
+      <div class="label">{{ st.replace('_', ' ').title() }}</div><div class="value">{{ counts[st] }}</div>
+    </a>
+    {% endif %}
   {% endfor %}
 </div>
 
@@ -37,15 +49,33 @@
         <td>{{ a.email or "— (Web Portal)" }}</td>
         <td>
           {% if a.ats_score %}
-            <span class="badge" style="font-weight:700; {% if a.ats_score >= 80 %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+            {% if a.ats_score >= 80 %}
+            <span class="badge" style="font-weight:700; background:#0f2e1b; color:var(--green); border:1px solid #1c5230;">
               {{ "%.0f"|format(a.ats_score) }}
             </span>
+            {% else %}
+            <span class="badge" style="font-weight:700; background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">
+              {{ "%.0f"|format(a.ats_score) }}
+            </span>
+            {% endif %}
           {% else %}
             <span class="muted">—</span>
           {% endif %}
         </td>
         <td>
-          <span class="badge" style="{% if st == 'sent' %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% elif st == 'failed' %}background:#3a1d1d; color:#ff7a88; border:1px solid #7a2e2e;{% elif st == 'pending_approval' %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% elif st == 'approved' %}background:#0b2b26; color:#2dd4bf; border:1px solid #134e4a;{% elif st == 'ready' %}background:#1e2a4a; color:#93c5fd; border:1px solid #2b3f6b;{% else %}background:#202430; color:var(--muted); border:1px solid #363c4e;{% endif %}">
+          {% if st == 'sent' %}
+          <span class="badge" style="background:#0f2e1b; color:var(--green); border:1px solid #1c5230;">
+          {% elif st == 'failed' %}
+          <span class="badge" style="background:#3a1d1d; color:#ff7a88; border:1px solid #7a2e2e;">
+          {% elif st == 'pending_approval' %}
+          <span class="badge" style="background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">
+          {% elif st == 'approved' %}
+          <span class="badge" style="background:#0b2b26; color:#2dd4bf; border:1px solid #134e4a;">
+          {% elif st == 'ready' %}
+          <span class="badge" style="background:#1e2a4a; color:#93c5fd; border:1px solid #2b3f6b;">
+          {% else %}
+          <span class="badge" style="background:#202430; color:var(--muted); border:1px solid #363c4e;">
+          {% endif %}
             {{ st.replace('_', ' ').title() }}
           </span>
         </td>

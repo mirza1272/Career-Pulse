@@ -493,13 +493,23 @@
     <div class="dash-hero-actions">
       <div class="dash-telemetry-pill">
         <div class="telemetry-item">
-          <span class="telemetry-dot" style="background: {% if supabase_online %}#10b981; box-shadow:0 0 6px #10b981;{% else %}#f59e0b;{% endif %}"></span>
-          <span>Cloud: <strong style="color:{% if supabase_online %}#10b981{% else %}#f59e0b{% endif %};">{% if supabase_online %}Synced{% else %}Local{% endif %}</strong></span>
+          {% if supabase_online %}
+          <span class="telemetry-dot" style="background: #10b981; box-shadow:0 0 6px #10b981;"></span>
+          <span>Cloud: <strong style="color: #10b981;">Synced</strong></span>
+          {% else %}
+          <span class="telemetry-dot" style="background: #f59e0b;"></span>
+          <span>Cloud: <strong style="color: #f59e0b;">Local</strong></span>
+          {% endif %}
         </div>
         <span style="color:var(--dash-border);">|</span>
         <div class="telemetry-item">
-          <span class="telemetry-dot" style="background: {% if smtp_ready %}#10b981; box-shadow:0 0 6px #10b981;{% else %}#f87171;{% endif %}"></span>
-          <span>Mailbox: <strong style="color:{% if smtp_ready %}#10b981{% else %}#f87171{% endif %};">{% if smtp_ready %}Connected{% else %}Setup{% endif %}</strong></span>
+          {% if smtp_ready %}
+          <span class="telemetry-dot" style="background: #10b981; box-shadow:0 0 6px #10b981;"></span>
+          <span>Mailbox: <strong style="color: #10b981;">Connected</strong></span>
+          {% else %}
+          <span class="telemetry-dot" style="background: #f87171;"></span>
+          <span>Mailbox: <strong style="color: #f87171;">Setup</strong></span>
+          {% endif %}
         </div>
       </div>
 
@@ -537,7 +547,8 @@
         </div>
       </div>
       <div class="kpi-progress-bar">
-        <div class="kpi-progress-fill" style="width: {% if total_jobs > 0 %}{{ (active_jobs / total_jobs * 100)|round }}{% else %}0{% endif %}%; background: #38bdf8;"></div>
+        {% set pct = ((active_jobs / total_jobs * 100)|round) if total_jobs > 0 else 0 %}
+        <div class="kpi-progress-fill" style="width: {{ pct }}%; background: #38bdf8;"></div>
       </div>
     </a>
 
@@ -706,12 +717,34 @@
           
           <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
             {% if a.ats_score %}
-              <span class="badge" style="font-weight: 700; font-size: 11px; {% if a.ats_score >= 80 %}background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;{% elif a.ats_score >= 60 %}background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;{% else %}background: #232734; color: #94a3b8; border: 1px solid #363c4e;{% endif %}" title="ATS keyword compatibility score">
+              {% if a.ats_score >= 80 %}
+              <span class="badge" style="font-weight: 700; font-size: 11px; background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;" title="ATS keyword compatibility score">
                 {{ "%.0f"|format(a.ats_score) }}%
               </span>
+              {% elif a.ats_score >= 60 %}
+              <span class="badge" style="font-weight: 700; font-size: 11px; background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;" title="ATS keyword compatibility score">
+                {{ "%.0f"|format(a.ats_score) }}%
+              </span>
+              {% else %}
+              <span class="badge" style="font-weight: 700; font-size: 11px; background: #232734; color: #94a3b8; border: 1px solid #363c4e;" title="ATS keyword compatibility score">
+                {{ "%.0f"|format(a.ats_score) }}%
+              </span>
+              {% endif %}
             {% endif %}
 
-            <span class="badge" style="font-size: 11px; {% if st == 'sent' %}background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;{% elif st == 'failed' %}background: #3a1d1d; color: #f87171; border: 1px solid #7a2e2e;{% elif st == 'pending_approval' %}background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;{% elif st == 'approved' %}background: #0b2b26; color: #2dd4bf; border: 1px solid #134e4a;{% elif st == 'ready' %}background: #1e2a4a; color: #93c5fd; border: 1px solid #2b3f6b;{% else %}background: #202430; color: var(--muted); border: 1px solid var(--dash-border);{% endif %}">
+            {% if st == 'sent' %}
+            <span class="badge" style="font-size: 11px; background: #0f2e1b; color: #10b981; border: 1px solid #1c5230;">
+            {% elif st == 'failed' %}
+            <span class="badge" style="font-size: 11px; background: #3a1d1d; color: #f87171; border: 1px solid #7a2e2e;">
+            {% elif st == 'pending_approval' %}
+            <span class="badge" style="font-size: 11px; background: #352507; color: #f59e0b; border: 1px solid #6b4d0e;">
+            {% elif st == 'approved' %}
+            <span class="badge" style="font-size: 11px; background: #0b2b26; color: #2dd4bf; border: 1px solid #134e4a;">
+            {% elif st == 'ready' %}
+            <span class="badge" style="font-size: 11px; background: #1e2a4a; color: #93c5fd; border: 1px solid #2b3f6b;">
+            {% else %}
+            <span class="badge" style="font-size: 11px; background: #202430; color: var(--muted); border: 1px solid var(--dash-border);">
+            {% endif %}
               {{ st.replace('_', ' ').title() }}
             </span>
 
@@ -866,7 +899,11 @@
         </div>
         <div class="provider-status-row">
           <span style="color: #cbd5e1;">SMTP Direct Delivery</span>
-          <span style="color: {% if smtp_ready %}#10b981{% else %}#f87171{% endif %}; font-weight: 600;">{% if smtp_ready %}● Verified TLS{% else %}○ Setup Required{% endif %}</span>
+          {% if smtp_ready %}
+          <span style="color: #10b981; font-weight: 600;">● Verified TLS</span>
+          {% else %}
+          <span style="color: #f87171; font-weight: 600;">○ Setup Required</span>
+          {% endif %}
         </div>
       </div>
 

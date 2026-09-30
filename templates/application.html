@@ -269,9 +269,15 @@
       {% endif %}
       {% if a.ats_score %}
         &nbsp;·&nbsp; ATS Score:
-        <span class="badge" style="font-weight:700; {% if a.ats_score >= 80 %}background:#064e3b; color:var(--green); border:1px solid #059669;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+        {% if a.ats_score >= 80 %}
+        <span class="badge" style="font-weight:700; background:#064e3b; color:var(--green); border:1px solid #059669;">
           {{ "%.0f"|format(a.ats_score) }}/100
         </span>
+        {% else %}
+        <span class="badge" style="font-weight:700; background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">
+          {{ "%.0f"|format(a.ats_score) }}/100
+        </span>
+        {% endif %}
         <span class="muted" style="font-size:12px;">({{ a.ats_attempts or 1 }} attempt{{ 's' if (a.ats_attempts or 1) > 1 else '' }})</span>
       {% endif %}
     </div>
@@ -306,15 +312,25 @@
         {% endif %}
       </div>
       {% if ats %}
-      <div style="font-size:26px; font-weight:800; color:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};">
-        {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:14px; color:#94a3b8; font-weight:500;">/100</span>
-      </div>
+        {% if ats.ats_readiness_score >= 87 %}
+        <div style="font-size:26px; font-weight:800; color:var(--green);">
+          {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:14px; color:#94a3b8; font-weight:500;">/100</span>
+        </div>
+        {% else %}
+        <div style="font-size:26px; font-weight:800; color:var(--yellow);">
+          {{ "%.0f"|format(ats.ats_readiness_score) }}<span style="font-size:14px; color:#94a3b8; font-weight:500;">/100</span>
+        </div>
+        {% endif %}
       {% endif %}
     </div>
 
     {% if ats %}
     <div style="height:6px; background:#1e2230; border-radius:4px; overflow:hidden; margin-bottom:16px;">
-      <div style="height:100%; width:{{ ats.ats_readiness_score }}%; border-radius:4px; background:{% if ats.ats_readiness_score >= 87 %}var(--green){% else %}var(--yellow){% endif %};"></div>
+      {% if ats.ats_readiness_score >= 87 %}
+      <div style="height:100%; width:{{ ats.ats_readiness_score }}%; border-radius:4px; background:var(--green);"></div>
+      {% else %}
+      <div style="height:100%; width:{{ ats.ats_readiness_score }}%; border-radius:4px; background:var(--yellow);"></div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -616,10 +632,12 @@
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:12px;">
             {% for tmpl in (available_templates or []) %}
             {% set is_active = (tmpl.id == (a.template_id or current_user.selected_template_id or 'apex_modern')) %}
-            <div style="background:#0e1015; border:2px solid {% if is_active %}#3b82f6{% else %}#272b38{% endif %}; border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; position:relative;">
-              {% if is_active %}
+            {% if is_active %}
+            <div style="background:#0e1015; border:2px solid #3b82f6; border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; position:relative;">
               <div style="position:absolute; top:10px; right:10px; background:#1d4ed8; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:12px; text-transform:uppercase; letter-spacing:0.05em;">Active</div>
-              {% endif %}
+            {% else %}
+            <div style="background:#0e1015; border:2px solid #272b38; border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; position:relative;">
+            {% endif %}
               <div>
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
                   <span style="width:12px; height:12px; border-radius:50%; background:{{ tmpl.primary_color }}; display:inline-block;"></span>
@@ -994,9 +1012,15 @@
           </td>
           <td>
             {% if v.ats_score %}
-              <span class="badge" style="font-weight:700; {% if v.ats_score >= 80 %}background:#0f2e1b; color:var(--green); border:1px solid #1c5230;{% else %}background:#352507; color:var(--yellow); border:1px solid #6b4d0e;{% endif %}">
+              {% if v.ats_score >= 80 %}
+              <span class="badge" style="font-weight:700; background:#0f2e1b; color:var(--green); border:1px solid #1c5230;">
                 {{ "%.0f"|format(v.ats_score) }}
               </span>
+              {% else %}
+              <span class="badge" style="font-weight:700; background:#352507; color:var(--yellow); border:1px solid #6b4d0e;">
+                {{ "%.0f"|format(v.ats_score) }}
+              </span>
+              {% endif %}
             {% else %}
               <span class="muted">—</span>
             {% endif %}
