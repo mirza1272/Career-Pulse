@@ -75,6 +75,9 @@ def test_resume_versions_hydration_from_disk(tmp_path, monkeypatch):
     main_html.write_text("<html><body><!--REGION:SUMMARY-->Current<!--END:SUMMARY--></body></html>", encoding="utf-8")
 
     with get_session() as s:
+        s.query(ResumeVersion).filter_by(application_id=app_id).delete()
+        s.query(Application).filter_by(id=app_id).delete()
+        s.commit()
         # Create an Application in DB
         app_obj = Application(
             id=app_id,

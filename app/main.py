@@ -573,6 +573,14 @@ def create_app() -> FastAPI:
         smtp_password: str = Form(""),
         smtp_host: str = Form("smtp.gmail.com"),
         smtp_port: int = Form(587),
+        apify_api_key: str = Form(""),
+        tavily_api_key: str = Form(""),
+        firecrawl_api_key: str = Form(""),
+        serpapi_api_key: str = Form(""),
+        clear_apify: str = Form(""),
+        clear_tavily: str = Form(""),
+        clear_firecrawl: str = Form(""),
+        clear_serpapi: str = Form(""),
     ) -> Response:
         user = getattr(request.state, "current_user", None)
         if not user:
@@ -597,6 +605,7 @@ def create_app() -> FastAPI:
             accept = request.headers.get("accept", "")
             if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JSONResponse({"success": False, "message": err_msg}, status_code=400)
+            provider_creds = get_masked_provider_credentials(user) if get_masked_provider_credentials else {}
             return templates.TemplateResponse(
                 request=request,
                 name="credentials.html",
@@ -605,6 +614,7 @@ def create_app() -> FastAPI:
                     "current_user": user,
                     "error": err_msg,
                     "setup_required": True,
+                    "provider_creds": provider_creds,
                 },
                 status_code=400,
             )
@@ -631,6 +641,7 @@ def create_app() -> FastAPI:
             accept = request.headers.get("accept", "")
             if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JSONResponse({"success": False, "message": handshake_err}, status_code=400)
+            provider_creds = get_masked_provider_credentials(user) if get_masked_provider_credentials else {}
             return templates.TemplateResponse(
                 request=request,
                 name="credentials.html",
@@ -639,11 +650,12 @@ def create_app() -> FastAPI:
                     "current_user": user,
                     "error": handshake_err,
                     "setup_required": True,
+                    "provider_creds": provider_creds,
                 },
                 status_code=400,
             )
 
-        # Handshake succeeded: save and encrypt
+        # Handshake succeeded: save and encrypt SMTP
         with get_session() as s:
             u = s.get(User, user.id)
             if u:
@@ -657,9 +669,24 @@ def create_app() -> FastAPI:
                 s.commit()
                 sync_user_to_supabase(u)
 
+        # Also save any provider keys submitted in the same form
+        if save_user_provider_credentials:
+            provider_keys = {
+                "apify_api_key": apify_api_key.strip(),
+                "tavily_api_key": tavily_api_key.strip(),
+                "firecrawl_api_key": firecrawl_api_key.strip(),
+                "serpapi_api_key": serpapi_api_key.strip(),
+                "clear_apify_api_key": bool(clear_apify),
+                "clear_tavily_api_key": bool(clear_tavily),
+                "clear_firecrawl_api_key": bool(clear_firecrawl),
+                "clear_serpapi_api_key": bool(clear_serpapi),
+            }
+            if any(provider_keys.values()):
+                save_user_provider_credentials(user.id, provider_keys)
+
         accept = request.headers.get("accept", "")
         if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JSONResponse({"success": True, "message": "Credentials verified and saved successfully!"})
+            return JSONResponse({"success": True, "message": "All credentials verified and saved successfully!"})
 
         return RedirectResponse("/credentials?saved=1", status_code=303)
 

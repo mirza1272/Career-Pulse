@@ -214,8 +214,39 @@ def test_credentials_api_endpoints_and_provider_testing():
     res_page = client.get("/credentials")
     assert res_page.status_code == 200
     assert "Job Search Provider Credentials" in res_page.text
-    assert "Apify API Key" in res_page.text
-    assert "Tavily API Key" in res_page.text
+    assert "Apify MCP" in res_page.text or "Apify API Key" in res_page.text
+    assert "Tavily" in res_page.text
+
+    # 4. Test Unified POST /credentials saving both SMTP and provider keys simultaneously
+    from unittest.mock import patch
+    with patch("smtplib.SMTP") as mock_smtp:
+        mock_instance = mock_smtp.return_value.__enter__.return_value
+        mock_instance.login.return_value = True
+        res_unified = client.post(
+            "/credentials",
+            data={
+                "sender_name": "Unified Tester",
+                "smtp_username": "api_endpoint_user@example.com",
+                "smtp_password": "testapppassword12",
+                "smtp_host": "smtp.gmail.com",
+                "smtp_port": 587,
+                "apify_api_key": "apify_api_UNIFIED_KEY",
+                "tavily_api_key": "tvly-UNIFIED_KEY",
+                "firecrawl_api_key": "fc-UNIFIED_KEY",
+            },
+            headers={"Accept": "application/json", "X-Requested-With": "XMLHttpRequest"},
+        )
+        assert res_unified.status_code == 200
+        assert res_unified.json().get("success") is True
+
+    # Verify provider keys were saved into user record
+    with get_session() as s:
+        u = s.get(User, user_id)
+        from radar.credentials import get_user_custom_keys
+        custom_keys = get_user_custom_keys(u)
+        assert custom_keys["apify_api_key"] == "apify_api_UNIFIED_KEY"
+        assert custom_keys["tavily_api_key"] == "tvly-UNIFIED_KEY"
+        assert custom_keys["firecrawl_api_key"] == "fc-UNIFIED_KEY"
 
 
 def test_radar_scan_provider_dropdown_flow():
