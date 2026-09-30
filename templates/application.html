@@ -667,7 +667,7 @@
         <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px;">
           <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block;">Profile Summary Statement</label>
           <div class="muted" style="font-size:12px; margin-bottom:10px;">Professional summary &amp; candidate positioning statement.</div>
-          <textarea name="summary" rows="4" style="width:100%; min-height:90px; background:#0e1015; border:1px solid var(--line); border-radius:8px; color:var(--text); padding:10px; font-size:13px;" required>{{ resume_detail.summary or resume_regions.summary }}</textarea>
+          <textarea name="summary" rows="4" style="width:100%; min-height:90px; background:#0e1015; border:1px solid var(--line); border-radius:8px; color:var(--text); padding:10px; font-size:13px;" required>{{ resume_detail.summary if (resume_detail and resume_detail.summary) else (resume_regions.summary if (resume_regions is defined and resume_regions and resume_regions.summary) else '') }}</textarea>
         </div>
       </div>
 
@@ -686,7 +686,7 @@
           </div>
 
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:12px;">
-            {% for cat_name, cat_skills in resume_detail.all_categories.items() %}
+            {% for cat_name, cat_skills in ((resume_detail.all_categories.items() if (resume_detail and resume_detail.all_categories) else [])) %}
             {% set active_cat_skills = resume_detail.active_category_skills.get(cat_name) or cat_skills[:5] %}
             <div class="skills-category-card" data-cat="{{ cat_name }}" style="background:#181b24; border:1px solid #272b38; border-radius:8px; padding:12px; transition:border-color 0.2s;">
               <!-- Category Header -->
@@ -791,7 +791,7 @@
                 <button type="button" class="btn secondary" style="padding:2px 8px; font-size:11px; margin:0;" onclick="document.getElementById('rawExpTextarea').value = document.getElementById('rawExpTemplate').value;">Load Current HTML</button>
               </div>
               <textarea id="rawExpTextarea" name="experience" rows="3" placeholder="Leave blank to use selected candidate experience cards above, or enter custom experience HTML here" style="width:100%; min-height:80px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;"></textarea>
-              <textarea id="rawExpTemplate" style="display:none;">{{ resume_detail.experience_html or resume_regions.experience }}</textarea>
+              <textarea id="rawExpTemplate" style="display:none;">{{ resume_detail.experience_html if (resume_detail and resume_detail.experience_html) else (resume_regions.experience if (resume_regions is defined and resume_regions and resume_regions.experience) else '') }}</textarea>
             </div>
           </details>
         </div>
@@ -891,7 +891,7 @@
         <div style="background:#13151c; border:1px solid #272b38; border-radius:8px; padding:16px; margin-bottom:16px;">
           <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block; font-size:14px;">Certifications</label>
           <div class="muted" style="font-size:12px; margin-bottom:6px;">One certification per line as <code>Name | Organization | https://link</code>. Section is omitted when empty.</div>
-          <textarea name="certifications_text" rows="3" placeholder="e.g. AWS Certified Machine Learning – Specialty | Amazon Web Services | https://credly.com/..." style="width:100%; min-height:64px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;">{{ resume_detail.certifications_text }}</textarea>
+          <textarea name="certifications_text" rows="3" placeholder="e.g. AWS Certified Machine Learning – Specialty | Amazon Web Services | https://credly.com/..." style="width:100%; min-height:64px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:8px 10px; font-size:12px;">{{ resume_detail.certifications_text if (resume_detail and resume_detail.certifications_text) else '' }}</textarea>
         </div>
 
         <!-- Links -->
@@ -899,10 +899,10 @@
           <label style="font-weight:600; color:#e2e8f0; margin-bottom:4px; display:block; font-size:14px;">Profile Links (Header)</label>
           <div class="muted" style="font-size:12px; margin-bottom:8px;">Header link URLs for your resume.</div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap:8px; margin-bottom:8px;">
-            <label style="font-size:12px; color:#94a3b8;">LinkedIn<input type="url" name="link_linkedin" value="{{ resume_detail.link_urls.get('linkedin', '') }}" placeholder="https://linkedin.com/in/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
-            <label style="font-size:12px; color:#94a3b8;">GitHub<input type="url" name="link_github" value="{{ resume_detail.link_urls.get('github', '') }}" placeholder="https://github.com/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
-            <label style="font-size:12px; color:#94a3b8;">Portfolio<input type="url" name="link_portfolio" value="{{ resume_detail.link_urls.get('portfolio', '') }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
-            <label style="font-size:12px; color:#94a3b8;">Website<input type="url" name="link_website" value="{{ resume_detail.link_urls.get('website', '') }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">LinkedIn<input type="url" name="link_linkedin" value="{{ resume_detail.link_urls.get('linkedin', '') if (resume_detail and resume_detail.link_urls) else '' }}" placeholder="https://linkedin.com/in/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">GitHub<input type="url" name="link_github" value="{{ resume_detail.link_urls.get('github', '') if (resume_detail and resume_detail.link_urls) else '' }}" placeholder="https://github.com/..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">Portfolio<input type="url" name="link_portfolio" value="{{ resume_detail.link_urls.get('portfolio', '') if (resume_detail and resume_detail.link_urls) else '' }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
+            <label style="font-size:12px; color:#94a3b8;">Website<input type="url" name="link_website" value="{{ resume_detail.link_urls.get('website', '') if (resume_detail and resume_detail.link_urls) else '' }}" placeholder="https://..." style="width:100%; margin-top:2px; background:#0e1015; border:1px solid var(--line); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px;"></label>
           </div>
         </div>
       </div>
@@ -1062,8 +1062,26 @@
     </button>
   </form>
 </div>
+<script id="appDataConfig" type="application/json">
+{
+  "email": {{ (a.email or "")|tojson }},
+  "subject": {{ (a.subject or default_subject or "")|tojson }},
+  "testMode": {{ "true" if test_mode else "false" }},
+  "testRecipient": {{ (test_recipient or "")|tojson }},
+  "sectionOrder": {{ (current_section_order or ["summary", "experience", "education", "skills", "projects", "certifications"])|tojson }}
+}
+</script>
 
 <script>
+const appConfig = (() => {
+  try {
+    const el = document.getElementById("appDataConfig");
+    return el ? JSON.parse(el.textContent || "{}") : {};
+  } catch (_) {
+    return {};
+  }
+})();
+
 async function saveEmailChangesAsync(event, form) {
   event.preventDefault();
   const btn = document.getElementById("btnSaveEmail") || form.querySelector('button[type="submit"]');
@@ -1213,8 +1231,8 @@ function openSendConfirmDialog() {
   const editSubjectEl = document.getElementById("editSubjectInput") || document.querySelector('input[type="text"][name="subject"]');
   const editBodyEl = document.getElementById("emailBodyText");
 
-  let recipientEmail = (editEmailEl ? editEmailEl.value.trim() : "") || {{ (a.email or "")|tojson }};
-  let emailSubject = (editSubjectEl ? editSubjectEl.value.trim() : "") || {{ (a.subject or default_subject or "")|tojson }};
+  let recipientEmail = (editEmailEl ? editEmailEl.value.trim() : "") || (appConfig.email || "");
+  let emailSubject = (editSubjectEl ? editSubjectEl.value.trim() : "") || (appConfig.subject || "");
   let emailBody = editBodyEl ? editBodyEl.value : "";
   // Escaper for user-controlled values interpolated into modal HTML (XSS).
   const escHtml = window.escapeHtml || ((v) => String(v == null ? "" : v));
@@ -1272,8 +1290,8 @@ function openSendConfirmDialog() {
 }
 
 function showDispatchConfirmModal(recipientEmail, emailSubject, emailBody) {
-  const testMode = {{ "true" if test_mode else "false" }};
-  const testRecipient = {{ (test_recipient or "")|tojson }};
+  const testMode = Boolean(appConfig.testMode);
+  const testRecipient = appConfig.testRecipient || "";
 
   // Escape user-controlled values before interpolating into modal HTML (XSS).
   const esc = window.escapeHtml || ((v) => String(v == null ? "" : v));
@@ -1600,7 +1618,9 @@ function switchCustSubtab(tabKey) {
 }
 
 // SECTION REORDERING & CUSTOM SEQUENCE LOGIC
-let currentSectionOrder = {{ (current_section_order or ["summary", "experience", "education", "skills", "projects", "certifications"])|tojson }};
+let currentSectionOrder = Array.isArray(appConfig.sectionOrder) && appConfig.sectionOrder.length > 0
+  ? [...appConfig.sectionOrder]
+  : ["summary", "experience", "education", "skills", "projects", "certifications"];
 
 const SECTION_META = {
   summary: { title: "Profile Summary", desc: "Professional summary statement" },

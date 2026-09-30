@@ -2,10 +2,13 @@
 {% block content %}
 
 {% if message %}
+<div id="radarFlashMsg" data-message="{{ message }}" style="display:none;"></div>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     if (window.showCustomAlert) {
-      const msg = {{ message|tojson }};
+      const el = document.getElementById("radarFlashMsg");
+      const msg = el ? (el.dataset.message || "") : "";
+      if (!msg) return;
       let alertType = "success";
       let alertTitle = "Radar Discovery Engine";
       if (msg.toLowerCase().includes("warning") || msg.includes("0 fresh")) {
@@ -960,9 +963,22 @@
     });
     return false;
   }
+</script>
 
+<script id="providerMetaData" type="application/json">
+{{ (provider_statuses if provider_statuses is defined and provider_statuses else {})|tojson }}
+</script>
+
+<script>
   // PROVIDER STATUS & COOLDOWN UX LOGIC
-  const providerMeta = {{ provider_statuses|tojson if provider_statuses is defined else '{}' }};
+  const providerMeta = (() => {
+    try {
+      const el = document.getElementById('providerMetaData');
+      return el ? JSON.parse(el.textContent || "{}") : {};
+    } catch (_) {
+      return {};
+    }
+  })();
 
   function updateProviderStatusDisplay() {
     const sel = document.getElementById('providerSelect');

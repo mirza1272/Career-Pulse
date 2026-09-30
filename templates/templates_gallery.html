@@ -191,9 +191,24 @@
   }
 </style>
 
+<script id="galleryConfig" type="application/json">
+{
+  "currentTemplateId": {{ (current_template_id or "apex_modern")|tojson }},
+  "userDefaultTemplateId": {{ (user_default_template_id or "apex_modern")|tojson }}
+}
+</script>
+
 <script>
-  let activeTemplateId = "{{ current_template_id }}";
-  let userDefaultTemplateId = "{{ user_default_template_id }}";
+  const galleryConfig = (() => {
+    try {
+      const el = document.getElementById("galleryConfig");
+      return el ? JSON.parse(el.textContent || "{}") : {};
+    } catch (_) {
+      return {};
+    }
+  })();
+  let activeTemplateId = galleryConfig.currentTemplateId || "apex_modern";
+  let userDefaultTemplateId = galleryConfig.userDefaultTemplateId || "apex_modern";
 
   const templateNames = {
     "apex_modern": "Apex Modern",
