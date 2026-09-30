@@ -402,13 +402,13 @@
 </div>
 
 <!-- ===================== ADD EXPERIENCE MODAL ===================== -->
-<div id="expModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:20px;">
-  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:580px; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden;">
-    <div style="padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+<div id="expModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:clamp(10px, 3vw, 20px); box-sizing:border-box;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:min(580px, 94vw); max-height:min(90vh, 680px); display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden; box-sizing:border-box;">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
       <h3 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Add Work Experience</h3>
-      <button type="button" onclick="closeExpModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      <button type="button" onclick="closeExpModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1; padding:0 4px;">&times;</button>
     </div>
-    <div style="padding:22px; display:flex; flex-direction:column; gap:14px;">
+    <div style="padding:clamp(16px, 3vw, 22px); display:flex; flex-direction:column; gap:14px; overflow-y:auto; flex:1;">
       <div class="modal-grid-2">
         <div>
           <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Employer / Company *</label>
@@ -451,7 +451,7 @@
       </div>
       <div id="expModalError" style="display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:8px 12px; color:#fca5a5; font-size:12px;"></div>
     </div>
-    <div style="padding:14px 22px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;">
+    <div style="padding:14px 20px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; flex-wrap:wrap;">
       <button type="button" onclick="closeExpModal()" class="btn secondary" style="margin:0; padding:9px 18px; font-size:13px;">Cancel</button>
       <button type="button" onclick="saveExpModal()" class="btn" style="margin:0; padding:9px 22px; font-size:13px; font-weight:700; background:var(--accent); color:#0e1015; border:none;">Add to List</button>
     </div>
@@ -459,27 +459,14 @@
 </div>
 
 <!-- ===================== ADD PROJECT MODAL ===================== -->
-<div id="projModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:20px;">
-  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:580px; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden;">
-    <div style="padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+<div id="projModal" style="display:none; position:fixed; inset:0; background:rgba(14,16,21,0.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:clamp(10px, 3vw, 20px); box-sizing:border-box;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; width:100%; max-width:min(580px, 94vw); max-height:min(90vh, 680px); display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.8); overflow:hidden; box-sizing:border-box;">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
       <h3 style="font-size:16px; font-weight:700; color:var(--text); margin:0;">Add Project</h3>
-      <button type="button" onclick="closeProjModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      <button type="button" onclick="closeProjModal()" style="background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1; padding:0 4px;">&times;</button>
     </div>
-    <div style="padding:22px; display:flex; flex-direction:column; gap:14px;">
+    <div style="padding:clamp(16px, 3vw, 22px); display:flex; flex-direction:column; gap:14px; overflow-y:auto; flex:1;">
       <div class="modal-grid-2">
-        <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Project Name *</label>
-          <input id="m_proj_name" type="text" placeholder="e.g. Nemetron"
-            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
-        </div>
-        <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Subtitle / Tagline</label>
-          <input id="m_proj_subtitle" type="text" placeholder="e.g. Agentic AI Knowledge System"
-            style="width:100%; background:var(--bg-input); border:1px solid var(--line); border-radius:8px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; box-sizing:border-box;"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line)'">
-        </div>
-      </div>
         <div>
           <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px;">Project Name *</label>
           <input id="m_proj_name" type="text" placeholder="e.g. Nemetron"
@@ -513,7 +500,7 @@
       </div>
       <div id="projModalError" style="display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:8px 12px; color:#fca5a5; font-size:12px;"></div>
     </div>
-    <div style="padding:14px 22px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;">
+    <div style="padding:14px 20px; background:rgba(0,0,0,0.15); border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; flex-wrap:wrap;">
       <button type="button" onclick="closeProjModal()" class="btn secondary" style="margin:0; padding:9px 18px; font-size:13px;">Cancel</button>
       <button type="button" onclick="saveProjModal()" class="btn" style="margin:0; padding:9px 22px; font-size:13px; font-weight:700; background:var(--accent); color:#0e1015; border:none;">Add to List</button>
     </div>

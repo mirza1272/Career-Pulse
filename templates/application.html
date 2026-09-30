@@ -97,25 +97,26 @@
   /* SUBTAB SCROLLBAR & HORIZONTAL SCROLL */
   .cust-subtab-bar {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px;
+    padding: 4px 2px 10px 2px;
     margin-bottom: 16px;
     border-bottom: 1px solid #272b38;
     scrollbar-width: thin;
     scrollbar-color: #272b38 transparent;
   }
   .cust-subtab-bar::-webkit-scrollbar {
-    height: 4px;
+    height: 5px;
   }
   .cust-subtab-bar::-webkit-scrollbar-thumb {
-    background: #272b38;
+    background: #374151;
     border-radius: 4px;
   }
   .cust-subtab-btn {
     white-space: nowrap;
     flex-shrink: 0;
+    touch-action: manipulation;
   }
 
   @media (max-width: 860px) {
@@ -136,6 +137,7 @@
     .app-actions-group {
       width: 100% !important;
       flex-direction: column !important;
+      gap: 8px !important;
     }
     .app-actions-group form,
     .app-actions-group button {
@@ -148,35 +150,53 @@
     }
     .resume-tab-btn-group {
       width: 100% !important;
+      display: flex !important;
       flex-direction: column !important;
+      gap: 8px !important;
       margin-top: 10px !important;
     }
     .resume-tab-btn-group button {
       width: 100% !important;
       text-align: center !important;
+      justify-content: center !important;
     }
     .hub-recreate-bar-flex {
       flex-direction: column !important;
       align-items: stretch !important;
-      gap: 12px !important;
+      gap: 14px !important;
     }
     .hub-recreate-bar-flex > div {
       width: 100% !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+    }
+    .hub-recreate-bar-flex form {
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
       justify-content: space-between !important;
     }
     .hub-recreate-bar-flex select {
       flex: 1 !important;
+      width: auto !important;
+      min-width: 140px !important;
     }
-    .hub-recreate-bar-flex #btnHubRecreate {
+    .hub-recreate-bar-flex #btnHubRecreate,
+    #btnApplySectionCustomizer {
       width: 100% !important;
       text-align: center !important;
+      justify-content: center !important;
+      padding: 12px 18px !important;
+      font-size: 14px !important;
     }
     #resumeIframe {
-      height: 78vh !important;
-      min-height: 520px !important;
+      height: 75vh !important;
+      min-height: 480px !important;
     }
     #resumeCanvasWrapper {
-      padding: 10px 4px !important;
+      padding: 8px 2px !important;
       overflow-x: auto !important;
       -webkit-overflow-scrolling: touch !important;
     }
@@ -187,6 +207,7 @@
     }
     .resume-toolbar-actions {
       width: 100% !important;
+      display: flex !important;
       justify-content: space-between !important;
       flex-wrap: wrap !important;
       gap: 6px !important;
@@ -194,23 +215,37 @@
     .resume-toolbar-actions .btn {
       flex: 1 1 auto !important;
       text-align: center !important;
-      padding: 6px 8px !important;
-      font-size: 11.5px !important;
+      padding: 8px 10px !important;
+      font-size: 12px !important;
     }
   }
 
-  @media (max-width: 560px) {
+  @media (max-width: 600px) {
+    .card {
+      padding: 14px 12px !important;
+    }
+    #resumeTabEdit, #resumeTabUpload {
+      padding: 12px 10px !important;
+    }
+    .cust-tab-pane > div {
+      padding: 12px 10px !important;
+    }
     .skills-category-card, .project-card {
       padding: 10px !important;
+    }
+    .section-order-item {
+      padding: 10px 10px !important;
+    }
+    .section-order-item button {
+      min-width: 36px !important;
+      min-height: 34px !important;
     }
     .custom-skill-input {
       font-size: 13px !important;
     }
-    .card {
-      padding: 14px 12px !important;
-    }
-    .section-order-item {
-      padding: 8px 10px !important;
+    .table-responsive {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
     }
   }
 </style>
@@ -1214,7 +1249,7 @@ function openSendConfirmDialog() {
 
 function showDispatchConfirmModal(recipientEmail, emailSubject, emailBody) {
   const testMode = {{ "true" if test_mode else "false" }};
-  const testRecipient = {{ test_recipient|tojson }};
+  const testRecipient = {{ (test_recipient or "")|tojson }};
 
   // Escape user-controlled values before interpolating into modal HTML (XSS).
   const esc = window.escapeHtml || ((v) => String(v == null ? "" : v));
@@ -1541,7 +1576,7 @@ function switchCustSubtab(tabKey) {
 }
 
 // SECTION REORDERING & CUSTOM SEQUENCE LOGIC
-let currentSectionOrder = {{ current_section_order|tojson if current_section_order else '["summary", "experience", "education", "skills", "projects", "certifications"]' }};
+let currentSectionOrder = {{ (current_section_order or ["summary", "experience", "education", "skills", "projects", "certifications"])|tojson }};
 
 const SECTION_META = {
   summary: { title: "Profile Summary", desc: "Professional summary statement" },

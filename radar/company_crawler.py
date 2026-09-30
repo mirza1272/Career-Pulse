@@ -27,9 +27,9 @@ logger = logging.getLogger("radar.company_crawler")
 class CompanyCareerCrawler:
     """Discovers and crawls live job vacancies from 75+ top tech company career pages & ATS portals."""
 
-    def __init__(self) -> None:
-        self.firecrawl = FirecrawlClient()
-        self.brave = BraveSearchClient()
+    def __init__(self, firecrawl_client: FirecrawlClient | None = None, brave_client: BraveSearchClient | None = None) -> None:
+        self.firecrawl = firecrawl_client or FirecrawlClient()
+        self.brave = brave_client or BraveSearchClient()
 
     def crawl_workable_account(
         self,

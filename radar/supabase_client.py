@@ -341,6 +341,7 @@ class SupabaseClient:
                 "drafted_email": (a.drafted_email or "")[:4000],
                 "subject": a.subject or "",
                 "resume_path": a.resume_path or "",
+                "template_id": a.template_id or "apex_modern",
                 "ats_score": float(a.ats_score or 0.0),
                 "ats_attempts": int(a.ats_attempts or 0),
                 "status": a.status or "pending",
@@ -353,6 +354,69 @@ class SupabaseClient:
             if res:
                 pushed += 1
         return pushed
+
+    def fetch_all_resume_versions(self, application_id: int | None = None) -> list[dict[str, Any]]:
+        """Fetch stored resume versions from Supabase public.resume_versions table."""
+        if not self.is_configured:
+            return []
+        query_params = ["select=*"]
+        if application_id is not None:
+            query_params.append(f"application_id=eq.{application_id}")
+        query_params.append("order=version_no.desc")
+        url = f"{self.base_url}/rest/v1/resume_versions?{'&'.join(query_params)}"
+        try:
+            with httpx.Client(timeout=self.timeout_s) as client:
+                res = client.get(url, headers=self._headers(prefer_return=False))
+                if res.status_code == 200:
+                    data = res.json()
+                    return data if isinstance(data, list) else []
+                elif res.status_code == 404 or "does not exist" in res.text:
+                    logger.debug("Supabase resume_versions table does not exist remotely yet.")
+                    return []
+        except Exception as e:
+            logger.warning(f"Supabase fetch_all_resume_versions error: {e}")
+        return []
+
+    def upsert_resume_version(self, data: dict[str, Any]) -> dict[str, Any] | None:
+        """Upsert a resume version row into Supabase public.resume_versions table."""
+        if not self.is_configured:
+            return None
+        clean_data = {k: v for k, v in data.items() if v is not None}
+        app_id = clean_data.get("application_id")
+        ver_no = clean_data.get("version_no")
+        try:
+            with httpx.Client(timeout=self.timeout_s) as client:
+                if app_id is not None and ver_no is not None:
+                    patch_url = f"{self.base_url}/rest/v1/resume_versions?application_id=eq.{app_id}&version_no=eq.{ver_no}"
+                    patch_res = client.patch(patch_url, json=clean_data, headers=self._headers(prefer_return=True))
+                    if patch_res.status_code == 200 and patch_res.json():
+                        return patch_res.json()[0]
+
+                post_url = f"{self.base_url}/rest/v1/resume_versions"
+                headers = self._headers(prefer_return=True)
+                headers["Prefer"] = "resolution=merge-duplicates,return=representation"
+                post_res = client.post(post_url, json=clean_data, headers=headers)
+                if post_res.status_code in (200, 201):
+                    rows = post_res.json()
+                    return rows[0] if isinstance(rows, list) and rows else rows
+                logger.debug(f"Supabase resume_version upsert status {post_res.status_code}: {post_res.text[:120]}")
+        except Exception as e:
+            logger.warning(f"Supabase resume_version upsert error: {e}")
+        return None
+
+    def delete_resume_version(self, application_id: int, version_no: int) -> bool:
+        """Delete a resume version row from Supabase."""
+        if not self.is_configured or not application_id or not version_no:
+            return False
+        url = f"{self.base_url}/rest/v1/resume_versions?application_id=eq.{application_id}&version_no=eq.{version_no}"
+        try:
+            with httpx.Client(timeout=self.timeout_s) as client:
+                res = client.delete(url, headers=self._headers(prefer_return=False))
+                return res.status_code in (200, 204)
+        except Exception as e:
+            logger.warning(f"Supabase delete resume_version error: {e}")
+            return False
+
 
     def update_job_status(
         self,

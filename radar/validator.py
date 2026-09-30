@@ -92,13 +92,104 @@ def verify_live_url(url: str, timeout_s: float = 6.0) -> tuple[bool, str]:
         return True, f"Verification skipped due to network ({exc})"
 
 
+def validate_job_freshness(
+    job: ExtractedJob,
+    now: dt.datetime | None = None,
+    max_posting_age_days: int = 21,
+) -> ValidationResult:
+    """Validate strict job freshness according to user rules:
+    1. If deadline is mentioned: deadline must be strictly in the future (>= today).
+    2. If no deadline is mentioned: posting date must be <= 3 weeks old (<= 21 days).
+    3. If neither deadline nor posting date is mentioned/detected: REJECT (avoid unverified stale postings).
+    """
+    current_time = now or dt.datetime.now(dt.timezone.utc)
+
+    # 0. Check URL slug for previous years (e.g. /2024/, /2023/)
+    if job.link:
+        if re.search(r"\b202[0-4]\d{4}\b", job.link) or re.search(r"/(?:202[0-4])[-/]", job.link):
+            return ValidationResult(False, f"URL slug indicates vacancy is from a previous year: {job.link}")
+
+    # 1. Deadline check
+    deadline = job.deadline
+    if deadline is None and job.jd_text:
+        from radar.extractor import parse_deadline_from_text
+        deadline = parse_deadline_from_text(job.jd_text)
+        if deadline:
+            job.deadline = deadline
+
+    if deadline is not None:
+        d_utc = deadline if deadline.tzinfo else deadline.replace(tzinfo=dt.timezone.utc)
+        if d_utc < current_time:
+            return ValidationResult(
+                False,
+                f"Application deadline has passed (deadline: {d_utc.strftime('%Y-%m-%d')}, now: {current_time.strftime('%Y-%m-%d')})",
+            )
+        return ValidationResult(True, f"Application deadline is valid and active ({d_utc.strftime('%Y-%m-%d')})")
+
+    # 2. Posting Date check (if no deadline)
+    pub_dt = job.published_at
+    if pub_dt is None and job.posted_at:
+        from radar.extractor import parse_datetime
+        pub_dt = parse_datetime(job.posted_at)
+
+    if pub_dt is not None:
+        p_utc = pub_dt if pub_dt.tzinfo else pub_dt.replace(tzinfo=dt.timezone.utc)
+        age_days = (current_time - p_utc).total_seconds() / 86400.0
+        if age_days > max_posting_age_days:
+            return ValidationResult(
+                False,
+                f"Posting date is {age_days:.1f} days old (> 3 weeks / {max_posting_age_days} days limit)",
+            )
+        return ValidationResult(True, f"Posting date is {age_days:.1f} days old (within 3 weeks)")
+
+    # Check relative text candidates in posted_at and description snippet
+    text_candidates = []
+    if job.posted_at:
+        text_candidates.append(job.posted_at)
+    if job.jd_text:
+        text_candidates.append(job.jd_text[:1200])
+
+    has_detected_date = False
+    for text in text_candidates:
+        t_clean = text.lower()
+        if re.search(r"\b(\d+)?\s*(?:month|yr|year)s?\s*ago\b", t_clean) or re.search(r"\bposted\s+(\d+)?\s*(?:month|yr|year)s?\b", t_clean):
+            return ValidationResult(False, "Posting date indicates vacancy is months/years old")
+
+        w_match = re.search(r"(\d+)\s*weeks?\s*ago", t_clean) or re.search(r"posted\s+(\d+)\s*weeks?", t_clean)
+        if w_match:
+            has_detected_date = True
+            weeks = int(w_match.group(1))
+            if weeks > 3 or (weeks * 7) > max_posting_age_days:
+                return ValidationResult(False, f"Posting is {weeks} weeks old (> 3 weeks limit)")
+            return ValidationResult(True, f"Posting is {weeks} weeks old (within 3 weeks)")
+
+        d_match = re.search(r"(\d+)\s*days?\s*ago", t_clean) or re.search(r"posted\s+(\d+)\s*days?", t_clean)
+        if d_match:
+            has_detected_date = True
+            days = int(d_match.group(1))
+            if days > max_posting_age_days:
+                return ValidationResult(False, f"Posting is {days} days old (> 3 weeks limit)")
+            return ValidationResult(True, f"Posting is {days} days old (within 3 weeks)")
+
+        if any(term in t_clean for term in ("hour", "hr ago", "minute", "min ago", "just now", "today", "yesterday", "past 24 hours", "past week", "recently", "active vacancy", "hiring now", "posted_at")):
+            has_detected_date = True
+            return ValidationResult(True, f"Posting date verified fresh: '{t_clean[:50]}'")
+
+    # 3. If neither deadline nor posting date is mentioned/detected: REJECT
+    if not has_detected_date:
+        return ValidationResult(False, "No verified posting date or deadline detected (avoiding unverified stale posting)")
+
+    return ValidationResult(True, "Posting freshness verified")
+
+
 def validate_apply_window(
     job: ExtractedJob,
     closed_phrases: list[str] | None = None,
     min_desc_len: int = 20,
     now: dt.datetime | None = None,
+    max_posting_age_days: int = 21,
 ) -> ValidationResult:
-    """Validate that the posting is currently open and has a valid apply window."""
+    """Validate that the posting is currently open, not expired, and within the 3-week posting window."""
     current_time = now or dt.datetime.now(dt.timezone.utc)
 
     # 1. URL validity
@@ -109,21 +200,16 @@ def validate_apply_window(
     if not job.jd_text or len(job.jd_text.strip()) < min_desc_len:
         return ValidationResult(False, f"Job description too short ({len(job.jd_text)} chars, min {min_desc_len})")
 
-    # 3. Explicit deadline in the past
-    if job.deadline is not None:
-        # Ensure timezone-aware comparison
-        d_utc = job.deadline if job.deadline.tzinfo else job.deadline.replace(tzinfo=dt.timezone.utc)
-        if d_utc < current_time:
-            return ValidationResult(
-                False,
-                f"Application deadline has passed (deadline: {d_utc.isoformat()}, now: {current_time.isoformat()})",
-            )
-
-    # 4. Closed phrase heuristics in description
+    # 3. Closed phrase heuristics in description
     phrases = closed_phrases or DEFAULT_CLOSED_PHRASES
     desc_lower = job.jd_text.lower()
     for phrase in phrases:
         if phrase in desc_lower:
             return ValidationResult(False, f"Posting contains closed phrase: '{phrase}'")
+
+    # 4. Enforce strict deadline and 3-week posting date verification
+    freshness_res = validate_job_freshness(job, now=current_time, max_posting_age_days=max_posting_age_days)
+    if not freshness_res.valid:
+        return freshness_res
 
     return ValidationResult(True, "Posting is valid and apply window is open")

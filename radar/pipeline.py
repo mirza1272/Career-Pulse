@@ -322,8 +322,10 @@ def run_pipeline(
     platform: str = "all",
     limit: int = 10,
     push_email_jobs: bool = True,
+    provider: str = "tavily",
+    user_creds: dict[str, str] | None = None,
 ) -> IngestionStats:
-    """Discover jobs using 3 to 4 distinct structured search queries generated dynamically by Groq LLM."""
+    """Discover jobs using structured queries generated dynamically by Groq LLM across selected provider."""
     effective_role = (custom_role.strip() if custom_role else "") or (query.strip() if query else "") or role or "Junior Developer (AI / Full-Stack / ASE)"
     effective_loc = (custom_location.strip() if custom_location else "") or location or "worldwide_remote_or_pakistan_onsite"
 
@@ -341,7 +343,7 @@ def run_pipeline(
             queries_to_run.insert(0, q_strip)
             queries_to_run = queries_to_run[:4]
 
-    logger.info(f"Pipeline running {len(queries_to_run)} structured queries: {queries_to_run}")
+    logger.info(f"Pipeline running {len(queries_to_run)} structured queries with provider='{provider}': {queries_to_run}")
 
     all_jobs: list[ExtractedJob] = []
     seen_links: set[str] = set()
@@ -349,7 +351,7 @@ def run_pipeline(
 
     # Step 2: Execute search across each LLM-generated query
     for idx, q in enumerate(queries_to_run, 1):
-        logger.info(f"Running LLM Query [{idx}/{len(queries_to_run)}]: '{q}' (<= 7 days freshness, {platform})")
+        logger.info(f"Running LLM Query [{idx}/{len(queries_to_run)}]: '{q}' (<= 7 days freshness, {platform}, {provider})")
         q_jobs = execute_search(
             query=q,
             role=q,
@@ -361,6 +363,8 @@ def run_pipeline(
             platform=platform,
             limit=per_query_limit,
             max_days=7,
+            provider=provider,
+            user_creds=user_creds,
         )
         for j in q_jobs:
             if j.link and j.link not in seen_links:
@@ -384,6 +388,8 @@ def run_pipeline(
                 platform=platform,
                 limit=limit - len(all_jobs),
                 max_days=14,
+                provider=provider,
+                user_creds=user_creds,
             )
             for j in expanded_jobs:
                 if j.link and j.link not in seen_links:

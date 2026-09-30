@@ -54,18 +54,26 @@ def parse_datetime(raw: str) -> dt.datetime | None:
     """Parse ISO or common date string into UTC datetime."""
     if not raw:
         return None
-    raw = raw.strip()
+    clean = raw.strip().rstrip(".,;:!)(\"'")
+    if not clean:
+        return None
+
     # Try ISO formats
-    iso_clean = raw.replace("Z", "+00:00")
+    iso_clean = clean.replace("Z", "+00:00")
     try:
-        return dt.datetime.fromisoformat(iso_clean)
+        parsed_iso = dt.datetime.fromisoformat(iso_clean)
+        return parsed_iso if parsed_iso.tzinfo else parsed_iso.replace(tzinfo=dt.timezone.utc)
     except Exception:
         pass
 
     # Try standard date formats
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%B %d, %Y", "%b %d, %Y", "%d %B %Y", "%d %b %Y"):
+    for fmt in (
+        "%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y",
+        "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y",
+        "%d %B %Y", "%d %b %Y", "%d-%b-%Y", "%d-%B-%Y"
+    ):
         try:
-            parsed = dt.datetime.strptime(raw[:20].strip(), fmt)
+            parsed = dt.datetime.strptime(clean[:25].strip(), fmt)
             return parsed.replace(tzinfo=dt.timezone.utc)
         except Exception:
             continue

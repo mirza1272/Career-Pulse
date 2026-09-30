@@ -170,6 +170,34 @@
   </div>
 
   <form method="post" action="/radar/scan" id="radarScanForm" class="heavy-action-overlay" data-title="Scanning 100+ Platforms &amp; 70+ Company Career Pages" data-sub="Searching real-time postings across Devsinc, Systems Ltd, 10Pearls, Arbisoft, Greenhouse, Lever, and remote tech boards...">
+    <!-- PROVIDER SELECTION BAR & STATUS STRIP -->
+    <div style="background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <label for="providerSelect" style="font-size:11.5px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:0.04em; margin:0; display:flex; align-items:center; gap:6px;">
+          <svg style="width:14px; height:14px; color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Job Search Provider
+        </label>
+        <select name="provider" id="providerSelect" onchange="updateProviderStatusDisplay()" style="background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">
+          <option value="apify_mcp" selected>Apify (Online / Live MCP)</option>
+          <option value="firecrawl">Firecrawl (Deep Web Scraper)</option>
+          <option value="tavily">Tavily (Real-Time Search)</option>
+          <option value="google_jobs">Google Jobs / SerpAPI</option>
+          <option value="all">All Providers (Multi-Engine)</option>
+        </select>
+      </div>
+      
+      <div id="providerStatusBadgeContainer" style="display:flex; align-items:center; gap:10px;">
+        <span id="providerStatusBadge" class="badge" style="background:#0e2417; color:#10b981; border:1px solid #1f4d32; font-size:11.5px; padding:4px 10px; display:inline-flex; align-items:center; gap:5px;">
+          <span id="providerStatusDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+          <span id="providerStatusText">Provider: Tavily · Ready</span>
+        </span>
+        <a href="/credentials" style="font-size:12px; color:var(--accent); text-decoration:underline;" title="Configure custom provider API keys in Credentials tab">Credentials</a>
+      </div>
+    </div>
+
     <!-- ROW 1: ROLE SELECTION & CUSTOM SEARCH -->
     <div class="radar-form-row1" style="display:grid; grid-template-columns: 1.4fr 1.6fr; gap:12px; margin-bottom:14px;">
       <div>
@@ -385,6 +413,23 @@
         <label for="includeRemoteCheck" style="font-size:12px; color:var(--text); cursor:pointer; font-weight:500;">
           Include Remote Opportunities (Worldwide &amp; Regional)
         </label>
+      </div>
+    </div>
+
+    <!-- LIMITED SEARCH & COOLDOWN UX BANNER -->
+    <div id="limitedSearchNotice" style="margin-top:14px; padding:10px 14px; background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.22); border-radius:8px; font-size:12px; color:#7dd3fc; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg style="width:14px; height:14px; flex-shrink:0; color:#38bdf8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span id="limitedSearchNoticeText">
+          <strong>Optional API credentials:</strong> Providing your own provider API keys in <a href="/credentials" style="color:#38bdf8; text-decoration:underline;">Credentials</a> enables higher/flexible search usage. Without custom keys, CareerPulse uses limited search mode (max 3 jobs, 2-hour cooldown).
+        </span>
+      </div>
+      <div id="cooldownTimerBadge" style="display:none; font-weight:700; color:#fbbf24; font-family:monospace; background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.4); padding:3px 8px; border-radius:4px; font-size:11.5px;">
+        Cooldown Active: <span id="cooldownCountdownText">00:00</span>
       </div>
     </div>
   </form>
@@ -915,6 +960,66 @@
     });
     return false;
   }
+
+  // PROVIDER STATUS & COOLDOWN UX LOGIC
+  const providerMeta = {{ provider_statuses|tojson if provider_statuses is defined else '{}' }};
+
+  function updateProviderStatusDisplay() {
+    const sel = document.getElementById('providerSelect');
+    const badge = document.getElementById('providerStatusBadge');
+    const dot = document.getElementById('providerStatusDot');
+    const text = document.getElementById('providerStatusText');
+    const timerBadge = document.getElementById('cooldownTimerBadge');
+    const countdownText = document.getElementById('cooldownCountdownText');
+    if (!sel || !badge || !text) return;
+
+    const prov = sel.value;
+    const defaultLabels = {
+      'apify_mcp': 'Apify (Online / Live MCP)',
+      'firecrawl': 'Firecrawl (Deep Web Scraper)',
+      'tavily': 'Tavily (Real-Time Search)',
+      'google_jobs': 'Google Jobs / SerpAPI',
+      'all': 'All Providers (Multi-Engine)'
+    };
+    const info = providerMeta[prov] || { name: defaultLabels[prov] || prov, configured: false, can_search: true, remaining_secs: 0, status_label: 'Ready' };
+    const provName = info.name || defaultLabels[prov] || prov;
+
+    if (info.is_user_key) {
+      badge.style.background = "#0e2417";
+      badge.style.borderColor = "#1f4d32";
+      badge.style.color = "#10b981";
+      dot.style.background = "#10b981";
+      text.textContent = `Provider: ${provName} · Ready (Custom Key)`;
+      if (timerBadge) timerBadge.style.display = "none";
+    } else if (info.can_search) {
+      badge.style.background = "#0b202e";
+      badge.style.borderColor = "#1e3a5f";
+      badge.style.color = "#38bdf8";
+      dot.style.background = "#38bdf8";
+      text.textContent = `Provider: ${provName} · ${info.status_label || 'Ready'}`;
+      if (timerBadge) timerBadge.style.display = "none";
+    } else {
+      badge.style.background = "#281e0f";
+      badge.style.borderColor = "#4a3818";
+      badge.style.color = "#f59e0b";
+      dot.style.background = "#f59e0b";
+      text.textContent = `Provider: ${provName} · Cooldown Active`;
+      if (timerBadge && countdownText) {
+        timerBadge.style.display = "inline-block";
+        let remSecs = info.remaining_secs || 0;
+        const fmt = (s) => {
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        };
+        countdownText.textContent = fmt(remSecs);
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateProviderStatusDisplay();
+  });
 </script>
 
 {% endblock %}

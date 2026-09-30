@@ -179,8 +179,8 @@
 </div>
 
 <!-- RESET PASSWORD MODAL -->
-<div id="resetPwdModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; padding:16px;">
-  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; width:100%; max-width:min(400px, 95vw); padding:24px; box-sizing:border-box;">
+<div id="resetPwdModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; padding:clamp(10px, 3vw, 16px); box-sizing:border-box;">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; width:100%; max-width:min(400px, 95vw); max-height:min(90vh, 520px); overflow-y:auto; padding:clamp(16px, 4vw, 24px); box-sizing:border-box;">
     <h3 style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:8px;">Reset User Password</h3>
     <p style="font-size:12px; color:var(--muted); margin-bottom:16px;" id="resetModalTarget">Setting new password for user.</p>
 

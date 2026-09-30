@@ -59,10 +59,22 @@ try:
     from radar.pipeline import run_pipeline
     from radar.expiry import run_expiry_check
     from radar.db import get_supabase_client
+    from radar.credentials import (
+        get_masked_provider_credentials,
+        get_user_provider_credentials,
+        save_user_provider_credentials,
+        check_limited_search_cooldown,
+        record_limited_search,
+    )
 except Exception:
     run_pipeline = None
     run_expiry_check = None
     get_supabase_client = None
+    get_masked_provider_credentials = None
+    get_user_provider_credentials = None
+    save_user_provider_credentials = None
+    check_limited_search_cooldown = None
+    record_limited_search = None
 from app.resume_builder import (
     DEFAULT_SECTION_ORDER,
     DEFAULT_TEMPLATE_ID,
@@ -366,6 +378,18 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon() -> Response:
+        """Serve a clean inline SVG icon as favicon to prevent 404 logs."""
+        svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+            '<rect width="32" height="32" rx="8" fill="#0e1015"/>'
+            '<circle cx="16" cy="16" r="6" fill="#10b981"/>'
+            '<circle cx="16" cy="16" r="11" fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.5"/>'
+            '</svg>'
+        )
+        return Response(content=svg, media_type="image/svg+xml")
+
     # ---- API: Radar (Project 1) pushes email-jobs here -------------------
     @app.post("/api/applications")
     def api_create(request: Request, body: ApplicationIn) -> dict[str, object]:
@@ -523,9 +547,10 @@ def create_app() -> FastAPI:
     # ---- CREDENTIALS GATEWAY ---------------------------------------------
     @app.get("/credentials", response_class=HTMLResponse)
     def credentials_page(
-        request: Request, setup_required: str = "", saved: str = "", error: str = ""
+        request: Request, setup_required: str = "", saved: str = "", saved_providers: str = "", error: str = ""
     ) -> HTMLResponse:
         user = getattr(request.state, "current_user", None)
+        provider_creds = get_masked_provider_credentials(user) if get_masked_provider_credentials else {}
         return templates.TemplateResponse(
             request=request,
             name="credentials.html",
@@ -534,6 +559,8 @@ def create_app() -> FastAPI:
                 "current_user": user,
                 "setup_required": bool(setup_required),
                 "saved": bool(saved),
+                "saved_providers": bool(saved_providers),
+                "provider_creds": provider_creds,
                 "error": error.strip(),
             },
         )
@@ -711,6 +738,89 @@ def create_app() -> FastAPI:
             return JSONResponse({"success": True, "message": f"Test email transmitted successfully to {target_email}!"})
         except Exception as exc:
             return JSONResponse({"success": False, "message": f"SMTP sending error: {exc}"})
+
+    @app.post("/credentials/providers")
+    async def credentials_providers_submit(
+        request: Request,
+        apify_api_key: str = Form(""),
+        tavily_api_key: str = Form(""),
+        firecrawl_api_key: str = Form(""),
+        serpapi_api_key: str = Form(""),
+        clear_apify: str = Form(""),
+        clear_tavily: str = Form(""),
+        clear_firecrawl: str = Form(""),
+        clear_serpapi: str = Form(""),
+    ) -> Response:
+        """Save optional job-search provider API credentials securely with AES-256 encryption."""
+        user = getattr(request.state, "current_user", None)
+        if not user:
+            return RedirectResponse("/login", status_code=303)
+
+        if save_user_provider_credentials:
+            keys = {
+                "apify_api_key": apify_api_key.strip(),
+                "tavily_api_key": tavily_api_key.strip(),
+                "firecrawl_api_key": firecrawl_api_key.strip(),
+                "serpapi_api_key": serpapi_api_key.strip(),
+                "clear_apify_api_key": bool(clear_apify),
+                "clear_tavily_api_key": bool(clear_tavily),
+                "clear_firecrawl_api_key": bool(clear_firecrawl),
+                "clear_serpapi_api_key": bool(clear_serpapi),
+            }
+            ok, msg = save_user_provider_credentials(user.id, keys)
+        else:
+            ok, msg = True, "Credentials received."
+
+        accept = request.headers.get("accept", "")
+        if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JSONResponse({"success": ok, "message": msg})
+
+        return RedirectResponse("/credentials?saved_providers=1", status_code=303)
+
+    @app.post("/credentials/test-provider")
+    async def credentials_test_provider(request: Request) -> JSONResponse:
+        """Test optional search provider API credentials."""
+        user = getattr(request.state, "current_user", None)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        provider = str(body.get("provider", "")).strip().lower()
+        raw_key = str(body.get("api_key", "")).strip()
+
+        # If key is empty, check user's saved key
+        if not raw_key and user and get_user_provider_credentials:
+            user_creds = get_user_provider_credentials(user)
+            if provider in ("apify", "apify_mcp"):
+                raw_key = user_creds.get("apify_api_key", "")
+            elif provider == "tavily":
+                raw_key = user_creds.get("tavily_api_key", "")
+            elif provider == "firecrawl":
+                raw_key = user_creds.get("firecrawl_api_key", "")
+            elif provider == "serpapi":
+                raw_key = user_creds.get("serpapi_api_key", "")
+
+        if not raw_key:
+            return JSONResponse({"success": False, "message": f"{provider.title()} API key is empty. Enter a key or save one first."})
+
+        if provider in ("apify", "apify_mcp"):
+            from radar.apify_mcp import test_apify_connection
+            ok, msg = test_apify_connection(raw_key)
+            return JSONResponse({"success": ok, "message": msg})
+        elif provider == "tavily":
+            from radar.search import test_tavily_connection
+            ok, msg = test_tavily_connection(raw_key)
+            return JSONResponse({"success": ok, "message": msg})
+        elif provider == "firecrawl":
+            from radar.search import test_firecrawl_connection
+            ok, msg = test_firecrawl_connection(raw_key)
+            return JSONResponse({"success": ok, "message": msg})
+        elif provider == "serpapi":
+            from radar.search import test_serpapi_connection
+            ok, msg = test_serpapi_connection(raw_key)
+            return JSONResponse({"success": ok, "message": msg})
+        else:
+            return JSONResponse({"success": False, "message": f"Unsupported provider: {provider}"})
 
     # ---- SYSTEM ADMINISTRATOR CONSOLE (ADMIN ONLY) ------------------------
     @app.get("/admin/users", response_class=HTMLResponse)
@@ -1043,11 +1153,13 @@ def create_app() -> FastAPI:
             # 2. Application Queue Metrics for current user
             total_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id).scalar() or 0
             sent_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id, Application.status == "sent").scalar() or 0
-            in_review_apps = s.query(sa_func.count(Application.id)).filter(
-                Application.user_id == user.id,
-                Application.status.in_(["draft", "pending", "ready", "pending_approval", "approved"]),
-            ).scalar() or 0
+            draft_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id, Application.status.in_(["draft", "pending"])).scalar() or 0
+            ready_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id, Application.status == "ready").scalar() or 0
+            pending_approval_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id, Application.status == "pending_approval").scalar() or 0
             approved_apps = s.query(sa_func.count(Application.id)).filter(Application.user_id == user.id, Application.status == "approved").scalar() or 0
+            in_review_apps = draft_apps + ready_apps + pending_approval_apps + approved_apps
+
+            dispatch_rate = round((sent_apps / total_apps * 100), 1) if total_apps > 0 else 0.0
 
             # 3. ATS Match Scoring Analytics
             avg_ats_score = s.query(sa_func.avg(Application.ats_score)).filter(
@@ -1070,6 +1182,11 @@ def create_app() -> FastAPI:
                 Application.ats_score < 60,
             ).scalar() or 0
 
+            scored_apps_count = high_ats_count + medium_ats_count + low_ats_count
+            high_ats_pct = round((high_ats_count / scored_apps_count * 100), 1) if scored_apps_count > 0 else 0.0
+            medium_ats_pct = round((medium_ats_count / scored_apps_count * 100), 1) if scored_apps_count > 0 else 0.0
+            low_ats_pct = round((low_ats_count / scored_apps_count * 100), 1) if scored_apps_count > 0 else 0.0
+
             # 4. Recent Data Streams
             recent_jobs = s.query(Job).order_by(Job.created_at.desc()).limit(6).all()
             recent_apps = s.query(Application).filter(Application.user_id == user.id).order_by(Application.created_at.desc()).limit(6).all()
@@ -1090,6 +1207,20 @@ def create_app() -> FastAPI:
             pass
 
         smtp_ready = bool(user.smtp_verified and user.smtp_username and user.smtp_password_encrypted)
+        
+        # Profile Completeness Calculation
+        profile_strength = 20
+        if candidate and candidate.name:
+            profile_strength += 15
+        if skills_count > 0:
+            profile_strength += 25
+        if experiences_count > 0:
+            profile_strength += 20
+        if projects_count > 0:
+            profile_strength += 10
+        if smtp_ready:
+            profile_strength += 10
+        profile_strength = min(100, profile_strength)
 
         return templates.TemplateResponse(
             request=request,
@@ -1102,12 +1233,21 @@ def create_app() -> FastAPI:
                 "saved_jobs": saved_jobs,
                 "total_apps": total_apps,
                 "sent_apps": sent_apps,
-                "in_review_apps": in_review_apps,
+                "draft_apps": draft_apps,
+                "ready_apps": ready_apps,
+                "pending_approval_apps": pending_approval_apps,
                 "approved_apps": approved_apps,
+                "in_review_apps": in_review_apps,
+                "dispatch_rate": dispatch_rate,
                 "avg_ats_score": round(float(avg_ats_score), 1) if avg_ats_score else 0.0,
                 "high_ats_count": high_ats_count,
                 "medium_ats_count": medium_ats_count,
                 "low_ats_count": low_ats_count,
+                "high_ats_pct": high_ats_pct,
+                "medium_ats_pct": medium_ats_pct,
+                "low_ats_pct": low_ats_pct,
+                "scored_apps_count": scored_apps_count,
+                "profile_strength": profile_strength,
                 "recent_jobs": recent_jobs,
                 "recent_apps": recent_apps,
                 "candidate": candidate,
@@ -1341,6 +1481,62 @@ def create_app() -> FastAPI:
                 .order_by(ResumeVersion.version_no.desc())
                 .all()
             )
+            if not versions:
+                # Dynamically hydrate versions from disk for this application if memory table is fresh
+                try:
+                    for vfile in RESUMES_OUTPUT_DIR.glob(f"application_{app_id}_v*.html"):
+                        m = re.match(rf"^application_{app_id}_v(\d+)\.html$", vfile.name)
+                        if m:
+                            vno = int(m.group(1))
+                            s.add(ResumeVersion(
+                                application_id=app_id,
+                                version_no=vno,
+                                role=row.job_title or "",
+                                jd_text=row.jd_text or "",
+                                kb_snapshot_hash="",
+                                resume_path=str(vfile),
+                                pdf_path=str(RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"),
+                                ats_score=row.ats_score or 0.0,
+                                iterations=row.ats_attempts or 1,
+                                score_history_json="[]",
+                                template_id=row.template_id or "apex_modern",
+                                created_at=row.created_at or dt.datetime.now(dt.timezone.utc),
+                                updated_at=row.updated_at or dt.datetime.now(dt.timezone.utc),
+                            ))
+                    if html_file.exists():
+                        v1_file = RESUMES_OUTPUT_DIR / f"application_{app_id}_v1.html"
+                        if not v1_file.exists():
+                            try:
+                                import shutil
+                                shutil.copy2(html_file, v1_file)
+                            except Exception:
+                                v1_file = html_file
+                        existing_v1 = s.query(ResumeVersion).filter_by(application_id=app_id, version_no=1).first()
+                        if not existing_v1:
+                            s.add(ResumeVersion(
+                                application_id=app_id,
+                                version_no=1,
+                                role=row.job_title or "",
+                                jd_text=row.jd_text or "",
+                                kb_snapshot_hash="",
+                                resume_path=str(v1_file),
+                                pdf_path=str(RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"),
+                                ats_score=row.ats_score or 0.0,
+                                iterations=row.ats_attempts or 1,
+                                score_history_json="[]",
+                                template_id=row.template_id or "apex_modern",
+                                created_at=row.created_at or dt.datetime.now(dt.timezone.utc),
+                                updated_at=row.updated_at or dt.datetime.now(dt.timezone.utc),
+                            ))
+                    s.commit()
+                    versions = (
+                        s.query(ResumeVersion)
+                        .filter_by(application_id=app_id)
+                        .order_by(ResumeVersion.version_no.desc())
+                        .all()
+                    )
+                except Exception as hydr_exc:
+                    logger.debug(f"Detail page version hydration notice: {hydr_exc}")
 
             # ATS breakdown + gap report (merged from preview page).
             ats_breakdown = None
@@ -1875,12 +2071,16 @@ def create_app() -> FastAPI:
         deleted = request.query_params.get("deleted")
         synced = request.query_params.get("synced")
         status_filter = request.query_params.get("status", "active")
+        error_notice = request.query_params.get("error_notice", "")
+        prov_param = request.query_params.get("provider", "tavily")
 
         qinfo = request.query_params.get("qinfo", "")
         message = ""
-        if scanned:
+        if error_notice:
+            message = error_notice
+        elif scanned:
             cnt = int(count or 0)
-            prefix = f"Scan complete. Ran {qinfo} AI structured queries. " if qinfo else "Scan complete. "
+            prefix = f"Scan complete ({prov_param.upper()}). Ran {qinfo} AI structured queries. " if qinfo else f"Scan complete ({prov_param.upper()}). "
             if cnt > 0:
                 message = f"{prefix}Discovered and stored {cnt} fresh job postings."
             else:
@@ -1902,6 +2102,63 @@ def create_app() -> FastAPI:
         if get_supabase_client:
             supabase = get_supabase_client()
             is_cloud, sb_msg = supabase.check_connection()
+
+        user = getattr(request.state, "current_user", None)
+        user_creds = get_user_provider_credentials(user) if get_user_provider_credentials else {}
+
+        # Resolve provider statuses & cooldowns for UI
+        tavily_ok = bool(user_creds.get("tavily_api_key"))
+        apify_ok = bool(user_creds.get("apify_api_key"))
+        firecrawl_ok = bool(user_creds.get("firecrawl_api_key"))
+        serpapi_ok = bool(user_creds.get("serpapi_api_key"))
+
+        tavily_can, tavily_rem, tavily_mode = check_limited_search_cooldown(user, "tavily") if check_limited_search_cooldown else (True, 0, "limited_free")
+        apify_can, apify_rem, apify_mode = check_limited_search_cooldown(user, "apify_mcp") if check_limited_search_cooldown else (True, 0, "limited_free")
+        firecrawl_can, firecrawl_rem, firecrawl_mode = check_limited_search_cooldown(user, "firecrawl") if check_limited_search_cooldown else (True, 0, "limited_free")
+        serpapi_can, serpapi_rem, serpapi_mode = check_limited_search_cooldown(user, "google_jobs") if check_limited_search_cooldown else (True, 0, "limited_free")
+
+        provider_statuses = {
+            "apify_mcp": {
+                "name": "Apify (Online / Live MCP)",
+                "configured": apify_ok,
+                "is_user_key": apify_ok,
+                "can_search": apify_can,
+                "remaining_secs": apify_rem,
+                "status_label": "Ready (Custom Key)" if apify_ok else ("Ready (Online MCP Key Pool)" if apify_can else f"Cooldown Active ({max(1, apify_rem//60)}m remaining)"),
+            },
+            "firecrawl": {
+                "name": "Firecrawl (Deep Web Scraper)",
+                "configured": firecrawl_ok,
+                "is_user_key": firecrawl_ok,
+                "can_search": firecrawl_can,
+                "remaining_secs": firecrawl_rem,
+                "status_label": "Ready (Custom Key)" if firecrawl_ok else ("Ready (System Scraper)" if firecrawl_can else f"Cooldown Active ({max(1, firecrawl_rem//60)}m remaining)"),
+            },
+            "tavily": {
+                "name": "Tavily (Real-Time Search)",
+                "configured": tavily_ok,
+                "is_user_key": tavily_ok,
+                "can_search": tavily_can,
+                "remaining_secs": tavily_rem,
+                "status_label": "Ready (Custom Key)" if tavily_ok else ("Ready (Limited Free Mode: 3 jobs max)" if tavily_can else f"Cooldown Active ({max(1, tavily_rem//60)}m remaining)"),
+            },
+            "google_jobs": {
+                "name": "Google Jobs / SerpAPI",
+                "configured": serpapi_ok,
+                "is_user_key": serpapi_ok,
+                "can_search": serpapi_can,
+                "remaining_secs": serpapi_rem,
+                "status_label": "Ready (Custom Key)" if serpapi_ok else ("Ready (SerpAPI Engine)" if serpapi_can else f"Cooldown Active ({max(1, serpapi_rem//60)}m remaining)"),
+            },
+            "all": {
+                "name": "All Providers (Multi-Engine)",
+                "configured": True,
+                "is_user_key": False,
+                "can_search": True,
+                "remaining_secs": 0,
+                "status_label": "Multi-Engine Parallel Mode",
+            }
+        }
 
         with get_session() as s:
             sync_from_supabase_to_memory(s)
@@ -1935,7 +2192,6 @@ def create_app() -> FastAPI:
 
             jobs_list = query.order_by(Job.created_at.desc()).limit(100).all()
 
-        user = getattr(request.state, "current_user", None)
         return templates.TemplateResponse(
             request=request,
             name="radar.html",
@@ -1943,6 +2199,7 @@ def create_app() -> FastAPI:
                 "jobs": jobs_list,
                 "current_user": user,
                 "status_filter": status_filter,
+                "provider_statuses": provider_statuses,
                 "counts": {
                     "total": total_jobs,
                     "active": active_jobs,
@@ -1961,6 +2218,8 @@ def create_app() -> FastAPI:
 
     @app.post("/radar/scan")
     def radar_scan_trigger(
+        request: Request,
+        provider: str = Form("tavily"),
         query: str = Form(""),
         role: str = Form("Junior Developer (AI / Full-Stack / ASE)"),
         custom_role: str = Form(""),
@@ -1971,6 +2230,36 @@ def create_app() -> FastAPI:
         platform: str = Form("all"),
         limit: int = Form(5),
     ) -> RedirectResponse:
+        import urllib.parse
+        user = getattr(request.state, "current_user", None)
+        user_creds = get_user_provider_credentials(user) if get_user_provider_credentials else {}
+
+        clean_provider = (provider or "apify_mcp").strip().lower()
+        if clean_provider not in ("apify_mcp", "apify", "firecrawl", "firecrawl_scraper", "tavily", "google_jobs", "all"):
+            clean_provider = "apify_mcp"
+
+        # Server-side Cooldown & Limit Enforcement for Limited Mode
+        if check_limited_search_cooldown:
+            can_search, remaining_secs, mode = check_limited_search_cooldown(user, clean_provider)
+            if not can_search:
+                rem_mins = max(1, remaining_secs // 60)
+                rem_h = rem_mins // 60
+                rem_m = rem_mins % 60
+                time_str = f"{rem_h}h {rem_m}m" if rem_h > 0 else f"{rem_mins} minutes"
+                err_msg = f"Limited search cooldown active. Next search available in {time_str}. Add your own {clean_provider.upper()} API key in Credentials for unlimited searches."
+                return RedirectResponse(
+                    url=f"/radar?error_notice={urllib.parse.quote(err_msg)}&status=active",
+                    status_code=303,
+                )
+
+        effective_limit = limit
+        if check_limited_search_cooldown:
+            _, _, mode = check_limited_search_cooldown(user, clean_provider)
+            if mode == "limited_free":
+                effective_limit = min(limit, 3)
+                if record_limited_search:
+                    record_limited_search(user, clean_provider)
+
         stored_count = 0
         queries_cnt = 0
         rem_bool = include_remote.lower() in ("true", "1", "yes", "on")
@@ -1984,12 +2273,14 @@ def create_app() -> FastAPI:
                 custom_location=custom_location,
                 include_remote=rem_bool,
                 platform=platform,
-                limit=limit,
+                limit=effective_limit,
                 push_email_jobs=True,
+                provider=clean_provider,
+                user_creds=user_creds,
             )
             stored_count = stats.stored_jobs
             queries_cnt = len(stats.queries_run)
-        return RedirectResponse(url=f"/radar?scanned=1&count={stored_count}&qinfo={queries_cnt}&status=active", status_code=303)
+        return RedirectResponse(url=f"/radar?scanned=1&count={stored_count}&qinfo={queries_cnt}&provider={clean_provider}&status=active", status_code=303)
 
     @app.get("/api/location/resolve")
     def api_location_resolve(lat: float = 0.0, lon: float = 0.0) -> JSONResponse:
@@ -2391,8 +2682,8 @@ def create_app() -> FastAPI:
             candidate = load_candidate_for_user(app_user) if app_user else load_candidate(user)
 
             html_path = RESUMES_OUTPUT_DIR / f"application_{app_id}.html"
+            tmpl_id = row.template_id or getattr(app_user, "selected_template_id", None) or "apex_modern"
             if not html_path.exists():
-                tmpl_id = row.template_id or getattr(app_user, "selected_template_id", None) or "apex_modern"
                 built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "", variant=tmpl_id)
                 try:
                     _atomic_write_text(html_path, built.html_content)
@@ -2401,6 +2692,13 @@ def create_app() -> FastAPI:
                 content = built.html_content
             else:
                 content = html_path.read_text(encoding="utf-8")
+                if not content or len(content.strip()) < 100 or "<!--REGION:SUMMARY-->" not in content:
+                    built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "", variant=tmpl_id)
+                    try:
+                        _atomic_write_text(html_path, built.html_content)
+                    except OSError:
+                        pass
+                    content = built.html_content
 
             # Guarantee viewport meta and screen styles are present even for legacy/cached files
             if '<meta name="viewport"' not in content:
@@ -2438,16 +2736,12 @@ def create_app() -> FastAPI:
             # Ensure any aggressive legacy autoFitResume loop is stripped so text never gets crushed
             content = re.sub(r"<script>\s*\(function autoFitResume\(\)[\s\S]*?</script>", "", content)
 
-            # Audit fix (defense in depth): the resume file contains stored
-            # user content and is served as same-origin HTML in an iframe.
-            # User HTML is sanitized at write time; this CSP additionally
-            # blocks any script that might slip through.
             return HTMLResponse(
                 content=content,
                 headers={
                     "Content-Security-Policy": (
-                        "default-src 'none'; style-src 'unsafe-inline'; "
-                        "img-src 'self' data:; font-src 'self' data:;"
+                        "default-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; "
+                        "img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com;"
                     ),
                     "Cache-Control": "no-cache, no-store, must-revalidate",
                     "Pragma": "no-cache",
@@ -3035,6 +3329,16 @@ def create_app() -> FastAPI:
                 pass
             s.delete(ver)
             s.commit()
+
+            # Also delete from Supabase cloud
+            try:
+                from radar.supabase_client import SupabaseClient
+                sb = SupabaseClient()
+                if sb.is_configured:
+                    sb.delete_resume_version(app_id, version_no)
+            except Exception as sb_del_exc:
+                logger.debug(f"Cloud delete resume version notice: {sb_del_exc}")
+
         return RedirectResponse(url=f"/application/{app_id}?version_deleted=v{version_no}", status_code=303)
 
     # ---- Template Selection & Customization Endpoints ---------------------
@@ -3062,7 +3366,7 @@ def create_app() -> FastAPI:
             html_file = RESUMES_OUTPUT_DIR / f"application_{app_id}.html"
             if html_file.exists():
                 current_html = html_file.read_text(encoding="utf-8")
-                new_html = switch_resume_template(current_html, valid_id, candidate=candidate)
+                new_html = switch_resume_template(current_html, valid_id, candidate=candidate, jd_text=row.jd_text or "", job_title=row.job_title or "")
             else:
                 built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "", variant=valid_id)
                 new_html = built.html_content

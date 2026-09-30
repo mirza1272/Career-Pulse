@@ -516,12 +516,12 @@ def get_available_templates() -> list[dict[str, Any]]:
 DEFAULT_SECTION_ORDER = ["summary", "experience", "education", "skills", "projects", "certifications"]
 
 SECTION_PATTERNS = {
-    "summary": re.compile(r'(?:<!--\s*PROFILE[^\n]*-->\s*)?<h2>(?:Profile|Professional Summary|Summary)</h2>\s*<p class="summary"><!--REGION:SUMMARY-->.*?<!--END:SUMMARY--></p>', re.DOTALL | re.I),
-    "experience": re.compile(r'(?:<!--\s*EMPLOYMENT[^\n]*-->\s*)?<h2>(?:Employment History|Experience|Work Experience)</h2>\s*<!--REGION:EXPERIENCE-->.*?<!--END:EXPERIENCE-->', re.DOTALL | re.I),
-    "education": re.compile(r'<!--REGION:EDUCATION-->.*?<!--END:EDUCATION-->', re.DOTALL | re.I),
-    "skills": re.compile(r'(?:<!--\s*SKILLS[^\n]*-->\s*)?<h2>(?:Skills|Technical Skills)</h2>\s*<ul class="skills-list"><!--REGION:SKILLS-->.*?<!--END:SKILLS--></ul>', re.DOTALL | re.I),
-    "projects": re.compile(r'(?:<!--\s*PROJECTS[^\n]*-->\s*)?<h2>Projects</h2>\s*<!--REGION:PROJECTS-->.*?<!--END:PROJECTS-->', re.DOTALL | re.I),
-    "certifications": re.compile(r'<!--REGION:CERTIFICATIONS-->.*?<!--END:CERTIFICATIONS-->', re.DOTALL | re.I),
+    "summary": re.compile(r'(?:<!--\s*PROFILE[^\n]*-->\s*)?<h2>(?:(?!</h2>).)*</h2>\s*<p[^>]*><!--REGION:SUMMARY-->.*?<!--END:SUMMARY--></p>', re.DOTALL | re.I),
+    "experience": re.compile(r'(?:<!--\s*EMPLOYMENT[^\n]*-->\s*)?<h2>(?:(?!</h2>).)*</h2>\s*<!--REGION:EXPERIENCE-->.*?<!--END:EXPERIENCE-->', re.DOTALL | re.I),
+    "education": re.compile(r'(?:<!--\s*EDUCATION[^\n]*-->\s*)?(?:<h2>(?:(?!</h2>).)*</h2>\s*)?<!--REGION:EDUCATION-->.*?<!--END:EDUCATION-->|<!--REGION:EDUCATION-->\s*<h2>(?:(?!</h2>).)*</h2>.*?<!--END:EDUCATION-->', re.DOTALL | re.I),
+    "skills": re.compile(r'(?:<!--\s*SKILLS[^\n]*-->\s*)?<h2>(?:(?!</h2>).)*</h2>\s*<ul[^>]*><!--REGION:SKILLS-->.*?<!--END:SKILLS--></ul>', re.DOTALL | re.I),
+    "projects": re.compile(r'(?:<!--\s*PROJECTS[^\n]*-->\s*)?<h2>(?:(?!</h2>).)*</h2>\s*<!--REGION:PROJECTS-->.*?<!--END:PROJECTS-->', re.DOTALL | re.I),
+    "certifications": re.compile(r'(?:<!--\s*CERTIFICATIONS[^\n]*-->\s*)?(?:<h2>(?:(?!</h2>).)*</h2>\s*)?<!--REGION:CERTIFICATIONS-->.*?<!--END:CERTIFICATIONS-->', re.DOTALL | re.I),
 }
 
 
@@ -537,10 +537,19 @@ def detect_section_order(doc_html: str | BuiltResume | None) -> list[str]:
         doc_html = str(doc_html)
 
     positions: dict[str, int] = {}
-    for name, pat in SECTION_PATTERNS.items():
-        m = pat.search(doc_html or "")
+    region_map = {
+        "summary": "SUMMARY",
+        "experience": "EXPERIENCE",
+        "education": "EDUCATION",
+        "skills": "SKILLS",
+        "projects": "PROJECTS",
+        "certifications": "CERTIFICATIONS",
+    }
+    for sec_name, reg_name in region_map.items():
+        m = re.search(rf'<!--REGION:{reg_name}-->', doc_html or "", re.I)
         if m:
-            positions[name] = m.start()
+            positions[sec_name] = m.start()
+
     ordered = sorted(positions.keys(), key=lambda k: positions[k])
     for k in DEFAULT_SECTION_ORDER:
         if k not in ordered:
@@ -561,21 +570,35 @@ def reorder_html_sections(doc_html: str, target_order: list[str] | str | None) -
     if not parsed_order:
         return doc_html
 
-    # Extract header / metadata prefix up to the end of <div class="header">...</div>
-    header_match = re.search(r'^(.*?<!--\s*HEADER[^\n]*-->.*?</div>\s*</div>\s*)', doc_html, re.DOTALL | re.I)
-    if not header_match:
-        header_match = re.search(r'^(.*?<div class="header">.*?</div>\s*)', doc_html, re.DOTALL | re.I)
+    # Extract header / metadata prefix up to the first section
+    first_section_pos = None
+    for pat in SECTION_PATTERNS.values():
+        m = pat.search(doc_html)
+        if m:
+            if first_section_pos is None or m.start() < first_section_pos:
+                first_section_pos = m.start()
 
-    if not header_match:
-        return doc_html
-
-    prefix = header_match.group(1)
+    if first_section_pos is not None:
+        prefix = doc_html[:first_section_pos]
+    else:
+        # Fallback to header match
+        header_match = re.search(r'^(.*?<!--\s*HEADER[^\n]*-->.*?</div>\s*</div>\s*)', doc_html, re.DOTALL | re.I)
+        if not header_match:
+            header_match = re.search(r'^(.*?<div class="header">.*?</div>\s*)', doc_html, re.DOTALL | re.I)
+        if not header_match:
+            return doc_html
+        prefix = header_match.group(1)
 
     blocks: dict[str, str] = {}
     for name, pat in SECTION_PATTERNS.items():
         m = pat.search(doc_html)
         if m:
             blocks[name] = m.group(0).strip()
+        else:
+            # Fallback by region marker
+            reg_m = re.search(rf'(?:<h2>.*?</h2>\s*)?<!--REGION:{name.upper()}-->.*?<!--END:{name.upper()}-->', doc_html, re.DOTALL | re.I)
+            if reg_m:
+                blocks[name] = reg_m.group(0).strip()
 
     active_order = list(parsed_order)
     for k in DEFAULT_SECTION_ORDER:
@@ -2093,6 +2116,8 @@ def switch_resume_template(
     current_html: str,
     new_template_id: str,
     candidate: Candidate | None = None,
+    jd_text: str = "",
+    job_title: str = "",
 ) -> str:
     """Switch the styling template of an existing resume HTML while strictly
     preserving all section contents, custom user edits, locked regions,
@@ -2103,8 +2128,14 @@ def switch_resume_template(
         tmpl_path = TEMPLATES_DIR / "apex_modern.html"
     base_template_html = tmpl_path.read_text(encoding="utf-8")
 
-    current_regions = extract_regions(current_html)
-    current_order = detect_section_order(current_html)
+    current_regions = extract_regions(current_html) if current_html else {}
+    current_order = detect_section_order(current_html) if current_html else list(DEFAULT_SECTION_ORDER)
+
+    # Ensure fallback if current_regions lacks critical content
+    if not current_regions.get("SUMMARY") or not current_regions.get("EXPERIENCE") or not current_regions.get("SKILLS"):
+        base_cand = candidate or load_candidate()
+        built = build_resume_content(base_cand, jd_text or "", job_title=job_title or "", variant=tid)
+        return built.html_content
 
     new_html = replace_regions(base_template_html, current_regions)
     if candidate:

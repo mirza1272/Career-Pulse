@@ -193,6 +193,109 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                 existing_a.email = a.get("email") or existing_a.email
                 if a.get("template_id"):
                     existing_a.template_id = a.get("template_id")
+        # 4. Hydrate Resume Versions from Supabase Cloud
+        try:
+            cloud_versions = sb.fetch_all_resume_versions()
+            for v in cloud_versions:
+                v_app_id = v.get("application_id")
+                v_no = v.get("version_no")
+                if not v_app_id or not v_no:
+                    continue
+                existing_v = session.scalar(
+                    select(ResumeVersion).where(
+                        ResumeVersion.application_id == v_app_id,
+                        ResumeVersion.version_no == int(v_no),
+                    )
+                )
+                if not existing_v:
+                    new_v = ResumeVersion(
+                        application_id=int(v_app_id),
+                        version_no=int(v_no),
+                        role=v.get("role") or "",
+                        jd_text=v.get("jd_text") or "",
+                        kb_snapshot_hash=v.get("kb_snapshot_hash") or "",
+                        resume_path=v.get("resume_path") or "",
+                        pdf_path=v.get("pdf_path") or "",
+                        ats_score=float(v.get("ats_score") or 0.0),
+                        iterations=int(v.get("iterations") or 1),
+                        score_history_json=v.get("score_history_json") or "[]",
+                        template_id=v.get("template_id") or "apex_modern",
+                        created_at=_parse_dt(v.get("created_at")) or dt.datetime.now(dt.timezone.utc),
+                        updated_at=_parse_dt(v.get("updated_at")) or dt.datetime.now(dt.timezone.utc),
+                    )
+                    session.add(new_v)
+        except Exception as ver_exc:
+            logger.debug(f"Cloud resume versions sync note: {ver_exc}")
+
+        # 5. Disk Resume Version Hydration (Ensures versions persist across in-memory DB restarts)
+        try:
+            import re
+            import shutil
+            from pathlib import Path
+            from app.tailor import RESUMES_OUTPUT_DIR
+            if RESUMES_OUTPUT_DIR.exists():
+                for vfile in RESUMES_OUTPUT_DIR.glob("application_*_v*.html"):
+                    m = re.match(r"^application_(\d+)_v(\d+)\.html$", vfile.name)
+                    if m:
+                        aid = int(m.group(1))
+                        vno = int(m.group(2))
+                        app_row = session.get(Application, aid)
+                        if not app_row:
+                            continue
+                        existing_v = session.scalar(
+                            select(ResumeVersion).where(
+                                ResumeVersion.application_id == aid,
+                                ResumeVersion.version_no == vno,
+                            )
+                        )
+                        if not existing_v:
+                            vrow = ResumeVersion(
+                                application_id=aid,
+                                version_no=vno,
+                                role=app_row.job_title or "",
+                                jd_text=app_row.jd_text or "",
+                                kb_snapshot_hash="",
+                                resume_path=str(vfile),
+                                pdf_path=str(RESUMES_OUTPUT_DIR / f"application_{aid}.pdf"),
+                                ats_score=app_row.ats_score or 0.0,
+                                iterations=app_row.ats_attempts or 1,
+                                score_history_json="[]",
+                                template_id=app_row.template_id or "apex_modern",
+                                created_at=app_row.created_at or dt.datetime.now(dt.timezone.utc),
+                                updated_at=app_row.updated_at or dt.datetime.now(dt.timezone.utc),
+                            )
+                            session.add(vrow)
+
+                # For any application with an existing resume on disk and 0 versions, seed version 1
+                for app_row in session.query(Application).all():
+                    ver_count = session.query(ResumeVersion).filter_by(application_id=app_row.id).count()
+                    if ver_count == 0:
+                        main_html = RESUMES_OUTPUT_DIR / f"application_{app_row.id}.html"
+                        if main_html.exists():
+                            v1_file = RESUMES_OUTPUT_DIR / f"application_{app_row.id}_v1.html"
+                            if not v1_file.exists():
+                                try:
+                                    shutil.copy2(main_html, v1_file)
+                                except Exception:
+                                    v1_file = main_html
+                            v1_row = ResumeVersion(
+                                application_id=app_row.id,
+                                version_no=1,
+                                role=app_row.job_title or "",
+                                jd_text=app_row.jd_text or "",
+                                kb_snapshot_hash="",
+                                resume_path=str(v1_file),
+                                pdf_path=str(RESUMES_OUTPUT_DIR / f"application_{app_row.id}.pdf"),
+                                ats_score=app_row.ats_score or 0.0,
+                                iterations=app_row.ats_attempts or 1,
+                                score_history_json="[]",
+                                template_id=app_row.template_id or "apex_modern",
+                                created_at=app_row.created_at or dt.datetime.now(dt.timezone.utc),
+                                updated_at=app_row.updated_at or dt.datetime.now(dt.timezone.utc),
+                            )
+                            session.add(v1_row)
+        except Exception as disk_exc:
+            logger.debug(f"Disk resume version hydration note: {disk_exc}")
 
         session.commit()
     except Exception as exc:
@@ -370,6 +473,29 @@ def record_resume_version(
         )
         session.add(row)
         session.flush()
+
+        # Real-time Cloud Sync to Supabase
+        try:
+            from radar.supabase_client import SupabaseClient
+            sb = SupabaseClient()
+            if sb.is_configured:
+                sb.upsert_resume_version({
+                    "application_id": application_id,
+                    "version_no": version_no,
+                    "role": row.role,
+                    "jd_text": (row.jd_text or "")[:4000],
+                    "kb_snapshot_hash": row.kb_snapshot_hash,
+                    "resume_path": row.resume_path,
+                    "pdf_path": row.pdf_path,
+                    "ats_score": row.ats_score,
+                    "iterations": row.iterations,
+                    "score_history_json": row.score_history_json,
+                    "template_id": row.template_id,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                })
+        except Exception as sb_exc:
+            logger.debug(f"Supabase resume version push warning: {sb_exc}")
+
         return row
     except Exception as exc:
         logger.warning("record_resume_version failed for app %s: %s", application_id, exc)

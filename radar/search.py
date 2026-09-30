@@ -261,66 +261,90 @@ def canonicalize_job_link(
 def is_within_last_3_days(
     posted_at: str | None = None,
     published_at: dt.datetime | None = None,
+    deadline: dt.datetime | None = None,
     extensions: list[str] | None = None,
     jd_text: str = "",
     link: str = "",
-    max_days: int = 7,
+    max_days: int = 21,  # 3 weeks max
 ) -> tuple[bool, str]:
-    """Check posting freshness within configurable cutoff (default 7 days)."""
-    # 0. Check URL slug for past year stamps (e.g. 2024 or 2023 in URL path)
+    """Strict freshness verification enforcing user rules:
+    1. If deadline is mentioned -> deadline must be >= today.
+    2. If no deadline -> posting date must be <= 3 weeks old (21 days).
+    3. If neither deadline nor posting date is mentioned/detected -> REJECT.
+    """
+    now_utc = dt.datetime.now(dt.timezone.utc)
+
+    # 0. Check URL slug for previous years (e.g. /2024/, /2023/)
     if link:
         if re.search(r"\b202[0-4]\d{4}\b", link) or re.search(r"/(?:202[0-4])[-/]", link):
             return False, f"URL slug indicates posting is from a previous year: {link}"
 
-    # 1. Check exact timestamp if available (e.g. Arbeitnow, Jobicy, Remotive, Workable)
+    # 1. Rule 1: Deadline check (if present)
+    eff_deadline = deadline
+    if eff_deadline is None and jd_text:
+        from radar.extractor import parse_deadline_from_text
+        eff_deadline = parse_deadline_from_text(jd_text)
+
+    if eff_deadline is not None:
+        d_utc = eff_deadline if eff_deadline.tzinfo is not None else eff_deadline.replace(tzinfo=dt.timezone.utc)
+        if d_utc < now_utc:
+            return False, f"Application deadline has passed (deadline: {d_utc.strftime('%Y-%m-%d')})"
+        return True, f"Application deadline is valid ({d_utc.strftime('%Y-%m-%d')})"
+
+    # 2. Rule 2: Posting date check (if no deadline)
+    # 2a. Check exact timestamp if available (e.g. Arbeitnow, Jobicy, Remotive, Workable)
     if published_at is not None:
-        now_utc = dt.datetime.now(dt.timezone.utc)
         pub_utc = published_at if published_at.tzinfo is not None else published_at.replace(tzinfo=dt.timezone.utc)
         age_hours = (now_utc - pub_utc).total_seconds() / 3600.0
         max_hours = max_days * 24.0
         if age_hours > max_hours:
-            return False, f"Posting published {age_hours:.1f}h ago (> {max_days} days maximum limit)"
-        return True, f"Posting published {age_hours:.1f}h ago (within {max_days} days)"
+            return False, f"Posting published {age_hours:.1f}h ago (> 3 weeks / {max_days} days limit)"
+        return True, f"Posting published {age_hours:.1f}h ago (within 3 weeks / {max_days} days)"
 
-    # 2. Check posted_at string and extensions (Google Jobs / LinkedIn / Indeed)
+    # 2b. Check posted_at string and extensions (Google Jobs / LinkedIn / Indeed / Apify / Tavily)
     text_candidates: list[str] = []
     if posted_at:
         text_candidates.append(str(posted_at))
     if extensions:
         text_candidates.extend(str(x) for x in extensions if x)
+    if jd_text:
+        text_candidates.append(jd_text[:1200])
 
+    has_date_detected = False
     for text in text_candidates:
         t_clean = text.lower().strip()
         # Reject anything mentioning months or years
-        if re.search(r"\b(\d+)?\s*(?:month|yr|year)s?\b", t_clean):
-            return False, f"Posting age rejected: '{t_clean}' (> {max_days} days)"
-        # Reject anything mentioning weeks if max_days < 7
-        if re.search(r"\b(\d+)?\s*weeks?\b", t_clean):
-            w_match = re.search(r"(\d+)\s*weeks?", t_clean)
-            weeks = int(w_match.group(1)) if w_match else 1
-            if weeks * 7 > max_days:
-                return False, f"Posting age rejected: '{t_clean}' (> {max_days} days)"
+        if re.search(r"\b(\d+)?\s*(?:month|yr|year)s?\s*ago\b", t_clean) or re.search(r"\bposted\s+(\d+)?\s*(?:month|yr|year)s?\b", t_clean):
+            return False, f"Posting age rejected: '{t_clean[:60]}' (months/years old)"
+
+        # Check weeks count
+        w_match = re.search(r"(\d+)\s*weeks?\s*ago", t_clean) or re.search(r"posted\s+(\d+)\s*weeks?", t_clean)
+        if w_match:
+            has_date_detected = True
+            weeks = int(w_match.group(1))
+            if weeks > 3 or (weeks * 7) > max_days:
+                return False, f"Posting is {weeks} weeks old (> 3 weeks limit)"
+            return True, f"Posting age verified: {weeks} weeks ago (within 3 weeks)"
+
         # Check day counts
-        day_match = re.search(r"(\d+)\s*days?\s*ago", t_clean)
+        day_match = re.search(r"(\d+)\s*days?\s*ago", t_clean) or re.search(r"posted\s+(\d+)\s*days?", t_clean)
         if day_match:
+            has_date_detected = True
             days = int(day_match.group(1))
             if days > max_days:
-                return False, f"Posting age rejected: {days} days ago (> {max_days} days maximum limit)"
-            else:
-                return True, f"Posting age verified: {days} days ago (<= {max_days} days)"
+                return False, f"Posting age rejected: {days} days ago (> 3 weeks limit)"
+            return True, f"Posting age verified: {days} days ago (within 3 weeks)"
+
         # Allowed fresh indicators
-        if any(term in t_clean for term in ("hour", "hr", "minute", "min", "just now", "today", "yesterday", "1 day ago", "2 days ago", "3 days ago", "recently", "active")):
-            return True, f"Posting age verified fresh: '{t_clean}'"
+        if any(term in t_clean for term in ("hour", "hr ago", "minute", "min ago", "just now", "today", "yesterday", "1 day ago", "2 days ago", "3 days ago", "recently", "active vacancy", "hiring now", "past week", "past 24 hours")):
+            has_date_detected = True
+            return True, f"Posting age verified fresh: '{t_clean[:50]}'"
 
-    # 3. Check job description preview if it contains explicit old posting phrases
-    body_preview = jd_text[:1200].lower()
-    if re.search(r"posted\s+(?:\d+\s+)?(?:month|year)s?\s+ago", body_preview):
-        return False, "Job description indicates posting is months old"
-    day_body_match = re.search(r"posted\s+(\d+)\s+days?\s+ago", body_preview)
-    if day_body_match and int(day_body_match.group(1)) > max_days:
-        return False, f"Job description indicates posting is {day_body_match.group(1)} days old (> {max_days} days)"
+    # 3. Rule 3: If neither deadline nor posting date is mentioned/detected -> REJECT
+    if not has_date_detected:
+        return False, "No verified posting date or deadline detected (avoiding unverified stale posting)"
 
-    return True, f"Age within accepted {max_days}-day range or live stream"
+    return True, f"Age within accepted 3-week ({max_days}-day) window"
 
 
 def filter_job_relevance_and_experience(
@@ -771,14 +795,19 @@ class TavilySearchProvider(SearchProvider):
 
     id: str = "tavily"
 
+    def __init__(self, api_key: str | None = None) -> None:
+        self.api_key = (api_key or os.environ.get("TAVILY_API_KEY", "")).strip()
+
     def search(
         self,
         query: str,
         experience_level: str = "junior",
         location: str = "worldwide_remote_or_pakistan_onsite",
         limit: int = 10,
+        include_remote: bool = True,
+        **kwargs: Any,
     ) -> list[ExtractedJob]:
-        api_key = os.environ.get("TAVILY_API_KEY", "").strip()
+        api_key = self.api_key or os.environ.get("TAVILY_API_KEY", "").strip()
         if not api_key:
             return []
 
@@ -1184,6 +1213,63 @@ class MockSearchProvider(SearchProvider):
         return fixtures[:limit]
 
 
+def test_tavily_connection(api_key: str) -> tuple[bool, str]:
+    """Test Tavily API key and return authentication status."""
+    if not api_key:
+        return False, "Tavily API key is empty."
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            res = client.post(
+                "https://api.tavily.com/search",
+                json={"api_key": api_key.strip(), "query": "software engineer", "max_results": 1},
+            )
+            if res.status_code == 200:
+                return True, "Tavily API key authenticated successfully."
+            elif res.status_code in (401, 403):
+                return False, "Invalid Tavily API key (Authentication failed)."
+            else:
+                return False, f"Tavily responded with status {res.status_code}"
+    except Exception as exc:
+        return False, f"Connection to Tavily failed: {exc}"
+
+
+def test_serpapi_connection(api_key: str) -> tuple[bool, str]:
+    """Test SerpAPI key."""
+    if not api_key:
+        return False, "SerpAPI key is empty."
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            res = client.get(f"https://serpapi.com/account?api_key={api_key.strip()}")
+            if res.status_code == 200:
+                data = res.json()
+                acc_email = data.get("account_email") or "Account"
+                return True, f"SerpAPI key authenticated ({acc_email})."
+            elif res.status_code in (401, 403):
+                return False, "Invalid SerpAPI key (Authentication failed)."
+            else:
+                return False, f"SerpAPI responded with status {res.status_code}"
+    except Exception as exc:
+        return False, f"Connection to SerpAPI failed: {exc}"
+
+
+def test_firecrawl_connection(api_key: str) -> tuple[bool, str]:
+    """Test Firecrawl API key."""
+    if not api_key:
+        return False, "Firecrawl API key is empty."
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            headers = {"Authorization": f"Bearer {api_key.strip()}"}
+            res = client.get("https://api.firecrawl.dev/v1/team/credit-usage", headers=headers)
+            if res.status_code in (200, 201):
+                return True, "Firecrawl API key authenticated successfully."
+            elif res.status_code in (401, 403):
+                return False, "Invalid Firecrawl API key (Authentication failed)."
+            else:
+                return True, "Firecrawl API key accepted."
+    except Exception as exc:
+        return False, f"Connection to Firecrawl failed: {exc}"
+
+
 def execute_search(
     query: str = "",
     role: str = "Junior Developer (AI / Full-Stack / ASE)",
@@ -1196,21 +1282,66 @@ def execute_search(
     limit: int = 10,
     use_mock_fallback: bool = False,
     max_days: int = 7,
+    provider: str = "tavily",
+    user_creds: dict[str, str] | None = None,
 ) -> list[ExtractedJob]:
-    """Execute high-speed concurrent multi-tier search across live ATS portals, Google, Tavily, Brave, and feeds."""
+    """Execute high-speed concurrent multi-tier search across live ATS portals, Google, Tavily, Apify MCP, Brave, and feeds."""
     effective_query = (custom_role.strip() if custom_role else "") or (query.strip() if query else "") or role or "Junior Developer (AI / Full-Stack / ASE)"
     effective_loc = (custom_location.strip() if custom_location else "") or location or "worldwide_remote_or_pakistan_onsite"
+    creds = user_creds or {}
 
+    # 1. Apify MCP Dedicated Mode
+    if provider in ("apify_mcp", "apify"):
+        try:
+            from radar.apify_mcp import ApifySearchProvider
+            apify_prov = ApifySearchProvider(api_key=creds.get("apify_api_key"))
+            apify_jobs = apify_prov.search(
+                query=effective_query,
+                experience_level=experience_level,
+                location=effective_loc,
+                include_remote=include_remote,
+                platform=platform,
+                limit=limit,
+            )
+            if apify_jobs:
+                return apify_jobs[:limit]
+        except Exception as exc:
+            logger.warning(f"Apify MCP search execution failed ({exc}); checking fallback.")
+
+    # 1b. Firecrawl Dedicated Mode
+    elif provider in ("firecrawl", "firecrawl_scraper"):
+        try:
+            from radar.firecrawl_client import FirecrawlClient
+            fc = FirecrawlClient(api_key=creds.get("firecrawl_api_key"))
+            from radar.company_crawler import CompanyCareerCrawler
+            crawler = CompanyCareerCrawler(firecrawl_client=fc)
+            c_jobs = crawler.crawl_all_companies(
+                target_role=effective_query,
+                experience_level=experience_level,
+                max_jobs=limit,
+                target_city="lahore" if "lahore" in effective_loc.lower() else ("islamabad" if "islamabad" in effective_loc.lower() else ""),
+            )
+            if c_jobs:
+                return c_jobs[:limit]
+        except Exception as exc:
+            logger.warning(f"Firecrawl provider search failed ({exc}); checking fallback.")
+
+    # 2. Standard multi-provider map
+    tavily_key = creds.get("tavily_api_key")
     providers_map: dict[str, SearchProvider] = {
         "google_jobs": SerpApiGoogleJobsProvider(),
-        "tavily": TavilySearchProvider(),
+        "tavily": TavilySearchProvider(api_key=tavily_key),
         "brave": BraveWebSearchProvider(),
         "jobicy": JobicySearchProvider(),
         "arbeitnow": ArbeitnowSearchProvider(),
         "remotive": RemotiveSearchProvider(),
     }
 
-    if platform in providers_map:
+    if provider == "google_jobs":
+        active_providers = [providers_map["google_jobs"]]
+    elif provider == "tavily":
+        active_providers = [providers_map["tavily"]]
+    elif platform in providers_map:
         active_providers = [providers_map[platform]]
     elif platform != "all":
         active_providers = [providers_map["google_jobs"], providers_map["tavily"], providers_map["brave"]]
