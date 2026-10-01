@@ -130,6 +130,7 @@ def sync_from_supabase_to_memory(session: Session) -> None:
             if not existing_j:
                 new_j = Job(
                     id=jid,
+                    user_id=j.get("user_id"),
                     dedup_key=j.get("dedup_key") or f"job_{jid}",
                     title=j.get("title") or "",
                     company=j.get("company") or "",
@@ -149,6 +150,8 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                 existing_j.status = j.get("status") or existing_j.status
                 existing_j.title = j.get("title") or existing_j.title
                 existing_j.company = j.get("company") or existing_j.company
+                if j.get("user_id"):
+                    existing_j.user_id = j.get("user_id")
 
         # 3. Hydrate Applications
         cloud_apps = sb.fetch_all_applications()

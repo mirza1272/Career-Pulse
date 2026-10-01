@@ -128,6 +128,7 @@ def test_async_radar_endpoints_and_application_email_edit():
 
         # Add a radar job
         job = Job(
+            user_id=user_id,
             dedup_key="test_radar_job_99999",
             title="Senior Machine Learning Specialist",
             company="DeepMind Labs",
@@ -210,3 +211,96 @@ def test_async_radar_endpoints_and_application_email_edit():
     # Verify deleted
     with get_session() as s:
         assert s.get(Job, job_id) is None
+
+
+def test_radar_multi_tenant_job_isolation_and_dedup():
+    """Verify that radar jobs and deduplication are strictly scoped per user."""
+    from radar.pipeline import process_extracted_jobs
+
+    client = TestClient(app)
+
+    with get_session() as s:
+        u1 = s.query(User).filter_by(email="radar_iso_u1@example.com").first()
+        if not u1:
+            u1 = User(
+                email="radar_iso_u1@example.com",
+                password_hash=hash_password("pass1"),
+                name="Radar User 1",
+                is_active=True,
+                smtp_verified=True,
+                smtp_username="radar_iso_u1@example.com",
+                smtp_password_encrypted=encrypt_credential("pass1"),
+            )
+            s.add(u1)
+        u2 = s.query(User).filter_by(email="radar_iso_u2@example.com").first()
+        if not u2:
+            u2 = User(
+                email="radar_iso_u2@example.com",
+                password_hash=hash_password("pass2"),
+                name="Radar User 2",
+                is_active=True,
+                smtp_verified=True,
+                smtp_username="radar_iso_u2@example.com",
+                smtp_password_encrypted=encrypt_credential("pass2"),
+            )
+            s.add(u2)
+        s.commit()
+        s.refresh(u1)
+        s.refresh(u2)
+        u1_id, u2_id = u1.id, u2.id
+
+    raw_jobs = [
+        {
+            "title": "Senior AI Platform Engineer",
+            "company": "Anthropic AI",
+            "location": "San Francisco, CA",
+            "link": "https://boards.greenhouse.io/anthropic/jobs/multi_tenant_1",
+            "source": "mock_greenhouse",
+            "posted_at": "1 hour ago",
+            "description": "Build high throughput agent pipelines in Python.",
+        }
+    ]
+
+    # Process for User 1
+    stats_1 = process_extracted_jobs(raw_jobs, user_id=u1_id)
+    assert stats_1.stored_jobs == 1
+    assert stats_1.duplicates_skipped == 0
+
+    # User 1 runs same job again -> Dedup detected for User 1
+    stats_1_again = process_extracted_jobs(raw_jobs, user_id=u1_id)
+    assert stats_1_again.stored_jobs == 0
+    assert stats_1_again.duplicates_skipped == 1
+
+    # User 2 runs SAME job -> Should succeed as new job for User 2 (not deduplicated across users)
+    stats_2 = process_extracted_jobs(raw_jobs, user_id=u2_id)
+    assert stats_2.stored_jobs == 1
+    assert stats_2.duplicates_skipped == 0
+
+    # Verify User 1 sees only their job in /radar
+    token1 = create_session_token(u1_id, "radar_iso_u1@example.com")
+    client.cookies.set("careerpulse_auth", token1)
+    res1 = client.get("/radar")
+    assert res1.status_code == 200
+    assert "Anthropic AI" in res1.text
+
+    # Verify User 2 sees their job in /radar
+    token2 = create_session_token(u2_id, "radar_iso_u2@example.com")
+    client.cookies.set("careerpulse_auth", token2)
+    res2 = client.get("/radar")
+    assert res2.status_code == 200
+    assert "Anthropic AI" in res2.text
+
+    # User 2 deletes their job
+    with get_session() as s:
+        u2_job = s.query(Job).filter(Job.user_id == u2_id, Job.company == "Anthropic AI").first()
+        assert u2_job is not None
+        u2_job_id = u2_job.id
+
+    res_del = client.post(f"/radar/job/{u2_job_id}/delete", headers={"Accept": "application/json", "X-Requested-With": "XMLHttpRequest"})
+    assert res_del.status_code == 200
+
+    # Verify User 1's job is STILL present and not deleted
+    with get_session() as s:
+        u1_job = s.query(Job).filter(Job.user_id == u1_id, Job.company == "Anthropic AI").first()
+        assert u1_job is not None
+

@@ -1228,7 +1228,7 @@ def create_app() -> FastAPI:
             low_ats_pct = round((low_ats_count / scored_apps_count * 100), 1) if scored_apps_count > 0 else 0.0
 
             # 4. Recent Data Streams
-            recent_jobs = s.query(Job).order_by(Job.created_at.desc()).limit(6).all()
+            recent_jobs = s.query(Job).filter((Job.user_id == user.id) | (Job.user_id.is_(None))).order_by(Job.created_at.desc()).limit(6).all()
             recent_apps = s.query(Application).filter(Application.user_id == user.id).order_by(Application.created_at.desc()).limit(6).all()
 
             # 5. Candidate Knowledge Base Summary
@@ -2202,13 +2202,17 @@ def create_app() -> FastAPI:
 
         with get_session() as s:
             sync_from_supabase_to_memory(s)
-            # Auto-expire postings in database older than 48 hours
+            user_id = user.id if user else None
+            # Auto-expire postings in database older than 48 hours for this user
             now_utc = dt.datetime.now(dt.timezone.utc)
             cutoff_48h = now_utc - dt.timedelta(hours=48)
-            stale_active = s.query(Job).filter(
+            stale_query = s.query(Job).filter(
                 Job.status == "active",
                 ((Job.created_at < cutoff_48h) | (Job.expires_at.is_not(None) & (Job.expires_at < now_utc)))
-            ).all()
+            )
+            if user_id:
+                stale_query = stale_query.filter(Job.user_id == user_id)
+            stale_active = stale_query.all()
             for sj in stale_active:
                 sj.status = "expired"
                 if get_supabase_client:
@@ -2218,15 +2222,21 @@ def create_app() -> FastAPI:
             if stale_active:
                 s.commit()
 
-            total_jobs = s.query(Job).count()
-            active_jobs = s.query(Job).filter(Job.status == "active").count()
-            expired_jobs = s.query(Job).filter(Job.status == "expired").count()
-            applied_jobs = s.query(Job).filter(Job.status == "applied").count()
-            saved_jobs = s.query(Job).filter(Job.status == "saved").count()
-            email_jobs = s.query(Job).filter(Job.has_email.is_(True)).count()
+            base_jobs = s.query(Job)
+            if user_id:
+                base_jobs = base_jobs.filter(Job.user_id == user_id)
+
+            total_jobs = base_jobs.count()
+            active_jobs = base_jobs.filter(Job.status == "active").count()
+            expired_jobs = base_jobs.filter(Job.status == "expired").count()
+            applied_jobs = base_jobs.filter(Job.status == "applied").count()
+            saved_jobs = base_jobs.filter(Job.status == "saved").count()
+            email_jobs = base_jobs.filter(Job.has_email.is_(True)).count()
             portal_jobs = total_jobs - email_jobs
 
             query = s.query(Job)
+            if user_id:
+                query = query.filter(Job.user_id == user_id)
             if status_filter in ("active", "expired", "applied", "saved", "rejected"):
                 query = query.filter(Job.status == status_filter)
 
@@ -2317,6 +2327,7 @@ def create_app() -> FastAPI:
                 push_email_jobs=True,
                 provider=clean_provider,
                 user_creds=user_creds,
+                user_id=user.id if user else None,
             )
             stored_count = stats.stored_jobs
             queries_cnt = len(stats.queries_run)
@@ -3488,8 +3499,8 @@ def create_app() -> FastAPI:
     @app.get("/templates/preview/{template_id}", response_class=HTMLResponse)
     def template_preview_html(template_id: str, request: Request) -> HTMLResponse:
         """Render live sample resume HTML for a specific template to preview in iframe."""
-        user = getattr(request.state, "current_user", None)
-        candidate = load_candidate_for_user(user) if user else load_candidate()
+        from app.knowledge import get_dummy_candidate
+        candidate = get_dummy_candidate()
         valid_id, _ = resolve_template(template_id)
         sample_jd = (
             "Senior Full Stack Software Engineer specializing in Python, FastAPI, TypeScript, React, "
@@ -3549,8 +3560,8 @@ def create_app() -> FastAPI:
     @app.get("/templates/sample-pdf/{template_id}")
     def template_sample_pdf(template_id: str, request: Request):
         """Compile and serve a sample PDF for the requested template style."""
-        user = getattr(request.state, "current_user", None)
-        candidate = load_candidate_for_user(user) if user else load_candidate()
+        from app.knowledge import get_dummy_candidate
+        candidate = get_dummy_candidate()
         valid_id, ti = resolve_template(template_id)
         sample_jd = (
             "Senior Full Stack Software Engineer specializing in Python, FastAPI, TypeScript, React, "

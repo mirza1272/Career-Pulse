@@ -1479,9 +1479,9 @@ def sync_candidate_contact_info(html_content: str, candidate: Candidate | None) 
         return html_content
 
     links = getattr(candidate, "links", {}) or {}
-    linkedin_url = links.get("linkedin") or "https://www.linkedin.com/in/haseeb-ur-rahman-8b152234b"
-    github_url = links.get("github") or "https://github.com/mirza1272"
-    portfolio_url = links.get("portfolio") or "https://mirzahaseeb.me/"
+    linkedin_url = links.get("linkedin") or "https://www.linkedin.com/in/alexmorgan"
+    github_url = links.get("github") or "https://github.com/alexmorgan"
+    portfolio_url = links.get("portfolio") or "https://alexmorgan.dev"
 
     if linkedin_url:
         html_content = re.sub(
@@ -2433,7 +2433,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     # 1. Header (Name & Subtitle)
     name_el = soup.find(class_="name")
     title_el = soup.find(class_="title")
-    name_text = _clean_text_for_pdf(name_el.get_text(strip=True) if name_el else "Haseeb Ur Rahman")
+    name_text = _clean_text_for_pdf(name_el.get_text(strip=True) if name_el else "Alex Morgan")
     title_text = _clean_text_for_pdf(title_el.get_text(strip=True) if title_el else "Software Engineer")
 
     contact_div = soup.find(class_="contact")

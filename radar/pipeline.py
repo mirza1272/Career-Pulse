@@ -40,6 +40,7 @@ def push_to_career_pulse_api(
     job_title: str,
     company: str,
     link: str,
+    user_id: int | None = None,
     api_url: str = config.CAREERPULSE_API_URL,
     timeout_s: float = 12.0,
 ) -> dict[str, Any] | None:
@@ -51,6 +52,7 @@ def push_to_career_pulse_api(
         "job_title": job_title,
         "company": company,
         "link": link,
+        "user_id": user_id,
     }
     url = f"{api_url}/api/applications"
     try:
@@ -71,17 +73,20 @@ def push_to_career_pulse_db(
     job_title: str,
     company: str,
     link: str,
+    user_id: int | None = None,
 ) -> int:
     """Fallback direct database insertion into shared applications table when API is offline."""
     with get_session() as session:
-        # Check if already present in applications
-        existing = session.scalars(
-            select(Application).where(Application.email == email, Application.job_title == job_title)
-        ).first()
+        # Check if already present in applications for this user
+        existing_stmt = select(Application).where(Application.email == email, Application.job_title == job_title)
+        if user_id is not None:
+            existing_stmt = existing_stmt.where(Application.user_id == user_id)
+        existing = session.scalars(existing_stmt).first()
         if existing:
             return existing.id
 
         app = Application(
+            user_id=user_id,
             job_id=job_id,
             email=email,
             job_title=job_title,
@@ -99,6 +104,7 @@ def push_to_career_pulse_db(
             supabase.upsert_application(
                 {
                     "id": app.id,
+                    "user_id": app.user_id,
                     "job_id": app.job_id,
                     "email": app.email,
                     "job_title": app.job_title,
@@ -113,16 +119,38 @@ def push_to_career_pulse_db(
 
 
 def process_extracted_jobs(
-    jobs: list[ExtractedJob],
+    jobs: list[ExtractedJob | dict],
     push_email_jobs: bool = True,
+    user_id: int | None = None,
 ) -> IngestionStats:
-    """Validate, deduplicate, store, and push a batch of extracted jobs."""
+    """Validate, deduplicate per user, store, and push a batch of extracted jobs."""
     stats = IngestionStats(total_found=len(jobs))
     now_utc = dt.datetime.now(dt.timezone.utc)
     supabase = get_supabase_client()
 
+    normalized_jobs: list[ExtractedJob] = []
+    for j in jobs:
+        if isinstance(j, dict):
+            normalized_jobs.append(
+                ExtractedJob(
+                    title=j.get("title", ""),
+                    company=j.get("company", ""),
+                    location=j.get("location", ""),
+                    link=j.get("link", ""),
+                    jd_text=j.get("jd_text") or j.get("description") or "",
+                    email=j.get("email"),
+                    has_email=bool(j.get("email")),
+                    deadline=j.get("deadline"),
+                    source=j.get("source", "web"),
+                    posted_at=j.get("posted_at"),
+                    published_at=j.get("published_at"),
+                )
+            )
+        else:
+            normalized_jobs.append(j)
+
     with get_session() as session:
-        for ext in jobs:
+        for ext in normalized_jobs:
             # 1. Apply-window validation
             val = validate_apply_window(ext, now=now_utc)
             if not val.valid:
@@ -147,12 +175,18 @@ def process_extracted_jobs(
 
             stats.valid_count += 1
 
-            # 2. Deduplication key
+            # 2. Deduplication key (scoped per user)
             dedup_key = generate_dedup_key(ext.company, ext.title, ext.link)
-            existing_job = session.scalars(select(Job).where(Job.dedup_key == dedup_key)).first()
+            if user_id is not None:
+                existing_job = session.scalars(
+                    select(Job).where(Job.user_id == user_id, Job.dedup_key == dedup_key)
+                ).first()
+            else:
+                existing_job = session.scalars(select(Job).where(Job.dedup_key == dedup_key)).first()
+
             if existing_job:
                 stats.duplicates_skipped += 1
-                logger.debug(f"Duplicate job skipped: {ext.title} @ {ext.company}")
+                logger.debug(f"Duplicate job skipped for user {user_id}: {ext.title} @ {ext.company}")
                 continue
 
             # 3. Calculate expires_at
@@ -162,8 +196,9 @@ def process_extracted_jobs(
             else:
                 expires_at = now_utc + dt.timedelta(hours=config.EXPIRY_HOURS_DEFAULT)
 
-            # 4. Insert into shared jobs table
+            # 4. Insert into jobs table
             job_row = Job(
+                user_id=user_id,
                 dedup_key=dedup_key,
                 title=ext.title,
                 company=ext.company,
@@ -187,6 +222,7 @@ def process_extracted_jobs(
             if supabase.is_configured:
                 supabase.insert_job(
                     {
+                        "user_id": user_id,
                         "dedup_key": dedup_key,
                         "title": ext.title,
                         "company": ext.company,
@@ -210,6 +246,7 @@ def process_extracted_jobs(
                     job_title=ext.title,
                     company=ext.company,
                     link=ext.link,
+                    user_id=user_id,
                 )
                 if api_res:
                     stats.pushed_to_career_pulse += 1
@@ -222,6 +259,7 @@ def process_extracted_jobs(
                         job_title=ext.title,
                         company=ext.company,
                         link=ext.link,
+                        user_id=user_id,
                     )
                     stats.pushed_to_career_pulse += 1
                     logger.info(f"Pushed to Career Pulse via shared DB: app_id={app_id}")
@@ -324,6 +362,7 @@ def run_pipeline(
     push_email_jobs: bool = True,
     provider: str = "tavily",
     user_creds: dict[str, str] | None = None,
+    user_id: int | None = None,
 ) -> IngestionStats:
     """Discover jobs using structured queries generated dynamically by Groq LLM across selected provider."""
     effective_role = (custom_role.strip() if custom_role else "") or (query.strip() if query else "") or role or "Junior Developer (AI / Full-Stack / ASE)"
@@ -343,7 +382,7 @@ def run_pipeline(
             queries_to_run.insert(0, q_strip)
             queries_to_run = queries_to_run[:4]
 
-    logger.info(f"Pipeline running {len(queries_to_run)} structured queries with provider='{provider}': {queries_to_run}")
+    logger.info(f"Pipeline running {len(queries_to_run)} structured queries for user_id={user_id} with provider='{provider}': {queries_to_run}")
 
     all_jobs: list[ExtractedJob] = []
     seen_links: set[str] = set()
@@ -396,7 +435,7 @@ def run_pipeline(
                     seen_links.add(j.link)
                     all_jobs.append(j)
 
-    stats = process_extracted_jobs(all_jobs, push_email_jobs=push_email_jobs)
+    stats = process_extracted_jobs(all_jobs, push_email_jobs=push_email_jobs, user_id=user_id)
     stats.queries_run = queries_to_run
     if not all_jobs:
         stats.message = f"No active jobs found. Ran {len(queries_to_run)} AI queries: {', '.join(queries_to_run)}."

@@ -127,6 +127,92 @@ def _cached_candidate() -> Candidate:
     )
 
 
+def get_dummy_candidate() -> Candidate:
+    """Return a pristine, generic dummy candidate profile for showcase and template previews."""
+    return Candidate(
+        name="Alex Morgan",
+        email="alex.morgan@example.com",
+        phone="+1 (555) 234-5678",
+        location="San Francisco, CA",
+        summary=(
+            "Results-driven Senior Full-Stack & AI Engineer with 6+ years of experience designing and "
+            "scaling high-throughput distributed systems, modern web architectures, and production LLM/agentic workflows. "
+            "Proven track record of architecting cloud-native microservices, optimizing database performance, and building resilient developer tooling."
+        ),
+        links={
+            "linkedin": "https://www.linkedin.com/in/alexmorgan",
+            "github": "https://github.com/alexmorgan",
+            "portfolio": "https://alexmorgan.dev",
+        },
+        skills=[
+            "Python", "TypeScript", "JavaScript", "Go", "SQL", "FastAPI",
+            "React.js", "Next.js", "Node.js", "PostgreSQL", "Redis", "Docker",
+            "Kubernetes", "AWS", "LLMs", "RAG", "LangChain", "Vector Embeddings",
+        ],
+        projects=[
+            {
+                "name": "AI Workflow Orchestrator",
+                "tagline": "Agentic AI Knowledge & Task Automation System",
+                "description": (
+                    "Built an open-source autonomous agent workflow framework enabling asynchronous tool invocation, "
+                    "vector search retrieval, and multi-step reasoning with Python and FastAPI."
+                ),
+                "skills": ["Python", "FastAPI", "LangChain", "Vector Embeddings", "React"],
+                "link": "https://github.com/alexmorgan/ai-orchestrator",
+            },
+            {
+                "name": "Cloud Stream Analytics",
+                "tagline": "High-Throughput Real-Time Event Processing Engine",
+                "description": (
+                    "Engineered a distributed real-time event processing engine handling 100k events/sec with sub-second aggregate query times "
+                    "using Go, Redis Streams, and PostgreSQL."
+                ),
+                "skills": ["Go", "Redis", "PostgreSQL", "Docker", "Kubernetes"],
+                "link": "https://github.com/alexmorgan/stream-analytics",
+            },
+        ],
+        experience=[
+            {
+                "role": "Senior Software Engineer",
+                "company": "Acme Cloud Systems",
+                "start": "Jan 2024",
+                "end": "Present",
+                "highlights": [
+                    "Architected and deployed microservices handling 50M+ daily requests using Python, FastAPI, and Kubernetes with 99.99% uptime.",
+                    "Built real-time data streaming pipelines with Kafka and Redis, reducing event processing latency by 45%.",
+                    "Led team of 6 engineers in implementing automated CI/CD deployment pipelines and comprehensive test coverage.",
+                ],
+            },
+            {
+                "role": "Full-Stack AI Engineer",
+                "company": "Nexus Global Tech",
+                "start": "Jun 2021",
+                "end": "Dec 2023",
+                "highlights": [
+                    "Developed full-stack web applications using React, TypeScript, Node.js, and PostgreSQL for enterprise customers.",
+                    "Designed and implemented an intelligent RAG contextual retrieval pipeline using vector embeddings and graph databases.",
+                    "Refactored legacy REST APIs into modular GraphQL services, cutting client network payload sizes by 35%.",
+                ],
+            },
+        ],
+        education=[
+            {
+                "degree": "B.S. in Computer Science",
+                "school": "University of California, Berkeley",
+                "year": "2017 – 2021",
+                "location": "Berkeley, CA",
+            }
+        ],
+        certifications=[
+            {
+                "name": "AWS Certified Solutions Architect",
+                "organization": "Amazon Web Services",
+                "link": "https://aws.amazon.com/certification",
+            }
+        ],
+    )
+
+
 def _normalize_certification(raw: object) -> dict:
     """Normalize one certification to {name, organization, link}.
 

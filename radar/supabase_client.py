@@ -66,6 +66,12 @@ class SupabaseClient:
                 if res.status_code in (200, 201):
                     rows = res.json()
                     return rows[0] if isinstance(rows, list) and rows else rows
+                if res.status_code == 400 and "user_id" in res.text and "user_id" in data:
+                    fallback_data = {k: v for k, v in data.items() if k != "user_id"}
+                    res2 = client.post(url, json=fallback_data, headers=self._headers(prefer_return=True))
+                    if res2.status_code in (200, 201):
+                        rows = res2.json()
+                        return rows[0] if isinstance(rows, list) and rows else rows
                 logger.warning(f"Supabase job insert returned {res.status_code}: {res.text[:150]}")
         except Exception as e:
             logger.warning(f"Supabase job insert skipped (network/pause): {e}")

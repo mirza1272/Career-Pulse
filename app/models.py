@@ -30,7 +30,8 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    dedup_key: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    dedup_key: Mapped[str] = mapped_column(String(120), index=True)
     title: Mapped[str] = mapped_column(String(400), default="")
     company: Mapped[str] = mapped_column(String(300), default="")
     location: Mapped[str] = mapped_column(String(300), default="")
