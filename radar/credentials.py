@@ -154,6 +154,7 @@ def get_masked_provider_credentials(user: User | None) -> dict[str, dict[str, An
     """Return safe metadata and masked keys for rendering the Credentials tab.
 
     Never exposes full API keys to the browser.
+    Clearly distinguishes user-provided custom keys from system default fallbacks.
     """
     user_keys = get_user_custom_keys(user)
     system_apify_pool = get_system_apify_keys()
@@ -164,52 +165,81 @@ def get_masked_provider_credentials(user: User | None) -> dict[str, dict[str, An
 
     if has_user_apify:
         apify_masked = _mask_key(user_keys["apify_api_key"])
-        apify_configured = True
+        apify_status = "custom"
+        apify_status_text = "Custom (Active)"
     elif has_system_apify:
         apify_masked = f"{len(system_apify_pool)} System Keys (Round Robin)"
-        apify_configured = True
+        apify_status = "system_default"
+        apify_status_text = "System Default"
     else:
         apify_masked = ""
-        apify_configured = False
+        apify_status = "not_configured"
+        apify_status_text = "Not Set"
+
+    def _get_provider_info(field_name: str, display_name: str, desc: str, placeholder: str):
+        u_val = user_keys.get(field_name, "")
+        sys_val = resolved.get(field_name, "")
+        is_user = bool(u_val)
+        has_sys = bool(sys_val)
+
+        if is_user:
+            masked = _mask_key(u_val)
+            status = "custom"
+            status_text = "Custom (Active)"
+        elif has_sys:
+            masked = ""
+            status = "system_default"
+            status_text = "System Default"
+        else:
+            masked = ""
+            status = "not_configured"
+            status_text = "Not Set"
+
+        return {
+            "name": display_name,
+            "field_name": field_name,
+            "configured": is_user,
+            "is_user_provided": is_user,
+            "has_system_default": has_sys,
+            "status": status,
+            "status_text": status_text,
+            "masked_key": masked if is_user else ("System Default (.env)" if has_sys else ""),
+            "description": desc,
+            "placeholder": placeholder,
+        }
 
     providers = {
         "apify": {
             "name": "Apify MCP",
             "field_name": "apify_api_key",
-            "configured": apify_configured,
+            "configured": has_user_apify,
             "is_user_provided": has_user_apify,
+            "has_system_default": has_system_apify,
+            "status": apify_status,
+            "status_text": apify_status_text,
             "masked_key": apify_masked,
             "system_pool_size": len(system_apify_pool),
             "description": "Used when Apify MCP is selected for job searching across global web sources and ATS boards. Optional users cycle through 3 system keys in round-robin sequence.",
             "placeholder": "apify_api_************************",
         },
-        "tavily": {
-            "name": "Tavily Search API",
-            "field_name": "tavily_api_key",
-            "configured": bool(resolved.get("tavily_api_key")),
-            "is_user_provided": bool(user_keys.get("tavily_api_key")),
-            "masked_key": _mask_key(user_keys.get("tavily_api_key") or resolved.get("tavily_api_key", "")),
-            "description": "Used when Tavily is selected for real-time live job discovery across verified platforms.",
-            "placeholder": "tvly-************************",
-        },
-        "firecrawl": {
-            "name": "Firecrawl Web Crawler",
-            "field_name": "firecrawl_api_key",
-            "configured": bool(resolved.get("firecrawl_api_key")),
-            "is_user_provided": bool(user_keys.get("firecrawl_api_key")),
-            "masked_key": _mask_key(user_keys.get("firecrawl_api_key") or resolved.get("firecrawl_api_key", "")),
-            "description": "Used for deep job page scraping and clean markdown extraction in Radar.",
-            "placeholder": "fc-************************",
-        },
-        "serpapi": {
-            "name": "SerpAPI Google Jobs",
-            "field_name": "serpapi_api_key",
-            "configured": bool(resolved.get("serpapi_api_key")),
-            "is_user_provided": bool(user_keys.get("serpapi_api_key")),
-            "masked_key": _mask_key(user_keys.get("serpapi_api_key") or resolved.get("serpapi_api_key", "")),
-            "description": "Used for direct Google Jobs search indexing and official company portal resolution.",
-            "placeholder": "************************",
-        },
+        "tavily": _get_provider_info(
+            "tavily_api_key",
+            "Tavily Search API",
+            "Used when Tavily is selected for real-time live job discovery across verified platforms.",
+            "tvly-************************",
+        ),
+        "firecrawl": _get_provider_info(
+            "firecrawl_api_key",
+            "Firecrawl Web Crawler",
+            "Used for deep job page scraping and clean markdown extraction in Radar.",
+            "fc-************************",
+        ),
+        "serpapi": _get_provider_info(
+            "serpapi_api_key",
+            "SerpAPI Google Jobs",
+            "Used for direct Google Jobs search indexing and official company portal resolution.",
+            "************************",
+        ),
     }
 
     return providers

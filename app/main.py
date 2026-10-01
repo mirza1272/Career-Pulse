@@ -813,39 +813,52 @@ def create_app() -> FastAPI:
         except Exception:
             body = {}
         provider = str(body.get("provider", "")).strip().lower()
-        raw_key = str(body.get("api_key", "")).strip()
+        input_key = str(body.get("api_key", "")).strip()
+        raw_key = input_key
+        key_source = "input" if input_key else "none"
 
-        # If key is empty, check user's saved key
-        if not raw_key and user and get_user_provider_credentials:
-            user_creds = get_user_provider_credentials(user)
-            if provider in ("apify", "apify_mcp"):
-                raw_key = user_creds.get("apify_api_key", "")
-            elif provider == "tavily":
-                raw_key = user_creds.get("tavily_api_key", "")
-            elif provider == "firecrawl":
-                raw_key = user_creds.get("firecrawl_api_key", "")
-            elif provider == "serpapi":
-                raw_key = user_creds.get("serpapi_api_key", "")
+        # If key is empty in payload, check user's custom saved key first, then system fallback
+        if not raw_key and user:
+            from radar.credentials import get_user_custom_keys
+            user_keys = get_user_custom_keys(user) if get_user_custom_keys else {}
+            p_field = "apify_api_key" if provider in ("apify", "apify_mcp") else f"{provider}_api_key"
+
+            if user_keys.get(p_field):
+                raw_key = user_keys[p_field]
+                key_source = "user_custom"
+            elif get_user_provider_credentials:
+                resolved = get_user_provider_credentials(user)
+                raw_key = resolved.get(p_field, "")
+                if raw_key:
+                    key_source = "system_default"
 
         if not raw_key:
-            return JSONResponse({"success": False, "message": f"{provider.title()} API key is empty. Enter a key or save one first."})
+            return JSONResponse({"success": False, "message": f"{provider.title()} API key is empty. Enter a key to test."})
 
         if provider in ("apify", "apify_mcp"):
             from radar.apify_mcp import test_apify_connection
             ok, msg = test_apify_connection(raw_key)
-            return JSONResponse({"success": ok, "message": msg})
+            if ok and key_source == "system_default":
+                msg = f"No custom key configured. Tested System Default Apify key: {msg}"
+            return JSONResponse({"success": ok, "message": msg, "source": key_source})
         elif provider == "tavily":
             from radar.search import test_tavily_connection
             ok, msg = test_tavily_connection(raw_key)
-            return JSONResponse({"success": ok, "message": msg})
+            if ok and key_source == "system_default":
+                msg = "No custom key configured. Tested System Default (.env) Tavily key successfully."
+            return JSONResponse({"success": ok, "message": msg, "source": key_source})
         elif provider == "firecrawl":
             from radar.search import test_firecrawl_connection
             ok, msg = test_firecrawl_connection(raw_key)
-            return JSONResponse({"success": ok, "message": msg})
+            if ok and key_source == "system_default":
+                msg = "No custom key configured. Tested System Default (.env) Firecrawl key successfully."
+            return JSONResponse({"success": ok, "message": msg, "source": key_source})
         elif provider == "serpapi":
             from radar.search import test_serpapi_connection
             ok, msg = test_serpapi_connection(raw_key)
-            return JSONResponse({"success": ok, "message": msg})
+            if ok and key_source == "system_default":
+                msg = "No custom key configured. Tested System Default (.env) SerpAPI key successfully."
+            return JSONResponse({"success": ok, "message": msg, "source": key_source})
         else:
             return JSONResponse({"success": False, "message": f"Unsupported provider: {provider}"})
 
