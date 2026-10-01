@@ -145,61 +145,115 @@ def get_dummy_candidate() -> Candidate:
             "portfolio": "https://alexmorgan.dev",
         },
         skills=[
-            "Python", "TypeScript", "JavaScript", "Go", "SQL", "FastAPI",
+            "Python", "TypeScript", "JavaScript", "Go", "SQL", "C++", "FastAPI",
             "React.js", "Next.js", "Node.js", "PostgreSQL", "Redis", "Docker",
             "Kubernetes", "AWS", "LLMs", "RAG", "LangChain", "Vector Embeddings",
+            "Tailwind CSS", "GraphQL", "AsyncIO", "CI/CD",
         ],
         projects=[
             {
+                "id": "ai_workflow_orchestrator",
                 "name": "AI Workflow Orchestrator",
-                "tagline": "Agentic AI Knowledge & Task Automation System",
-                "description": (
-                    "Built an open-source autonomous agent workflow framework enabling asynchronous tool invocation, "
-                    "vector search retrieval, and multi-step reasoning with Python and FastAPI."
-                ),
+                "short_name": "AI Workflow Orchestrator",
+                "subtitle": "Agentic AI Knowledge & Task Automation System",
+                "bullet": "Built an open-source autonomous agent workflow framework enabling asynchronous tool invocation, vector search retrieval, and multi-step reasoning with Python and FastAPI.",
+                "description": "Built an open-source autonomous agent workflow framework enabling asynchronous tool invocation, vector search retrieval, and multi-step reasoning with Python and FastAPI.",
                 "skills": ["Python", "FastAPI", "LangChain", "Vector Embeddings", "React"],
                 "link": "https://github.com/alexmorgan/ai-orchestrator",
+                "domains": ["ai_ml", "full_stack"],
+                "priority": 1,
             },
             {
+                "id": "cloud_stream_analytics",
                 "name": "Cloud Stream Analytics",
-                "tagline": "High-Throughput Real-Time Event Processing Engine",
-                "description": (
-                    "Engineered a distributed real-time event processing engine handling 100k events/sec with sub-second aggregate query times "
-                    "using Go, Redis Streams, and PostgreSQL."
-                ),
+                "short_name": "Cloud Stream Analytics",
+                "subtitle": "High-Throughput Real-Time Event Processing Engine",
+                "bullet": "Engineered a distributed real-time event processing engine handling 100k events/sec with sub-second aggregate query times using Go, Redis Streams, and PostgreSQL.",
+                "description": "Engineered a distributed real-time event processing engine handling 100k events/sec with sub-second aggregate query times using Go, Redis Streams, and PostgreSQL.",
                 "skills": ["Go", "Redis", "PostgreSQL", "Docker", "Kubernetes"],
                 "link": "https://github.com/alexmorgan/stream-analytics",
+                "domains": ["full_stack", "backend"],
+                "priority": 2,
+            },
+            {
+                "id": "nexus_enterprise_portal",
+                "name": "Nexus Enterprise Portal",
+                "short_name": "Nexus Enterprise Portal",
+                "subtitle": "Modern MERN & Next.js Analytics Dashboard",
+                "bullet": "Designed and shipped a responsive enterprise analytics dashboard with real-time WebSocket feeds, role-based access control, and customizable data widgets.",
+                "description": "Designed and shipped a responsive enterprise analytics dashboard with real-time WebSocket feeds, role-based access control, and customizable data widgets.",
+                "skills": ["React.js", "Next.js", "TypeScript", "Tailwind CSS", "Node.js"],
+                "link": "https://github.com/alexmorgan/nexus-portal",
+                "domains": ["full_stack", "frontend"],
+                "priority": 3,
+            },
+            {
+                "id": "secure_mesh_proxy",
+                "name": "Secure Mesh Proxy",
+                "short_name": "Secure Mesh Proxy",
+                "subtitle": "Zero-Trust API Gateway & Traffic Ingestion",
+                "bullet": "Created a lightweight zero-trust reverse proxy package featuring SSRF mitigation, token rate-limiting, dynamic TLS routing, and async HTTP connection pooling.",
+                "description": "Created a lightweight zero-trust reverse proxy package featuring SSRF mitigation, token rate-limiting, dynamic TLS routing, and async HTTP connection pooling.",
+                "skills": ["Python", "FastAPI", "Security", "AsyncIO", "Docker"],
+                "link": "https://github.com/alexmorgan/secure-mesh-proxy",
+                "domains": ["backend", "full_stack"],
+                "priority": 4,
             },
         ],
         experience=[
             {
-                "role": "Senior Software Engineer",
+                "employer": "Acme Cloud Systems",
                 "company": "Acme Cloud Systems",
-                "start": "Jan 2024",
+                "title": "Senior Software Engineer",
+                "role": "Senior Software Engineer",
+                "start": "2024-01",
                 "end": "Present",
-                "highlights": [
+                "location": "San Francisco, CA",
+                "skills_used": ["Python", "FastAPI", "Kubernetes", "Kafka", "Redis", "Docker"],
+                "bullets": [
                     "Architected and deployed microservices handling 50M+ daily requests using Python, FastAPI, and Kubernetes with 99.99% uptime.",
                     "Built real-time data streaming pipelines with Kafka and Redis, reducing event processing latency by 45%.",
-                    "Led team of 6 engineers in implementing automated CI/CD deployment pipelines and comprehensive test coverage.",
+                    "Led team of 6 engineers in implementing automated CI/CD deployment pipelines, code quality gates, and 95%+ test coverage.",
                 ],
             },
             {
-                "role": "Full-Stack AI Engineer",
+                "employer": "Nexus Global Tech",
                 "company": "Nexus Global Tech",
-                "start": "Jun 2021",
-                "end": "Dec 2023",
-                "highlights": [
+                "title": "Full-Stack AI Engineer",
+                "role": "Full-Stack AI Engineer",
+                "start": "2021-06",
+                "end": "2023-12",
+                "location": "San Francisco, CA",
+                "skills_used": ["React", "TypeScript", "Node.js", "PostgreSQL", "RAG", "GraphQL"],
+                "bullets": [
                     "Developed full-stack web applications using React, TypeScript, Node.js, and PostgreSQL for enterprise customers.",
                     "Designed and implemented an intelligent RAG contextual retrieval pipeline using vector embeddings and graph databases.",
-                    "Refactored legacy REST APIs into modular GraphQL services, cutting client network payload sizes by 35%.",
+                    "Refactored legacy REST APIs into modular GraphQL microservices, cutting client network payload sizes by 35%.",
+                ],
+            },
+            {
+                "employer": "Vanguard Systems Lab",
+                "company": "Vanguard Systems Lab",
+                "title": "Software Engineering Intern",
+                "role": "Software Engineering Intern",
+                "start": "2020-06",
+                "end": "2020-09",
+                "location": "Berkeley, CA",
+                "skills_used": ["Python", "Docker", "PostgreSQL", "CI/CD"],
+                "bullets": [
+                    "Engineered automated integration test suites and CI/CD pipelines reducing deployment failure rates by 30%.",
+                    "Optimized PostgreSQL database queries and indexing strategies, improving report generation throughput by 2x.",
                 ],
             },
         ],
         education=[
             {
                 "degree": "B.S. in Computer Science",
+                "institution": "University of California, Berkeley",
                 "school": "University of California, Berkeley",
-                "year": "2017 – 2021",
+                "field": "Computer Science",
+                "start": "2017",
+                "end": "2021",
                 "location": "Berkeley, CA",
             }
         ],
@@ -208,7 +262,12 @@ def get_dummy_candidate() -> Candidate:
                 "name": "AWS Certified Solutions Architect",
                 "organization": "Amazon Web Services",
                 "link": "https://aws.amazon.com/certification",
-            }
+            },
+            {
+                "name": "TensorFlow Developer Certificate",
+                "organization": "Google",
+                "link": "https://www.tensorflow.org/certificate",
+            },
         ],
     )
 

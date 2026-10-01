@@ -1286,10 +1286,10 @@ def render_projects_html(projects: list[dict]) -> str:
     blocks: list[str] = []
     link_svg = '<svg class="link-icon" viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7h-4a5 5 0 1 0 0 10h4v-1.9h-4A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8v2zm5-6v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10h-4z"/></svg>'
     for p in projects:
-        name = _html.escape(p.get("short_name") or p.get("name") or "")
-        subtitle = _html.escape(p.get("subtitle") or "")
-        bullet = _html.escape(p.get("bullet") or "")
-        link = p.get("link")
+        name = _html.escape(p.get("short_name") or p.get("name") or p.get("title") or "")
+        subtitle = _html.escape(p.get("subtitle") or p.get("tagline") or "")
+        bullet = _html.escape(p.get("bullet") or p.get("description") or p.get("summary") or "")
+        link = p.get("link") or p.get("url") or p.get("github")
         if link:
             head = f'<strong><a href="{_html.escape(link)}" target="_blank" style="text-decoration:none;color:inherit;">{name}</a></strong> <a href="{_html.escape(link)}" target="_blank" style="text-decoration:none;color:#137f96;">{link_svg}</a>'
         else:
@@ -1324,16 +1324,19 @@ def render_experience_html(experiences: list[dict]) -> str:
         return d_str
 
     for exp in experiences:
-        employer = _html.escape(exp.get("employer") or "")
-        title = _html.escape(exp.get("title") or "")
-        start_d = _format_date(exp.get("start") or "")
-        end_d = _format_date(exp.get("end") or "") or "present"
+        employer = _html.escape(exp.get("employer") or exp.get("company") or "")
+        title = _html.escape(exp.get("title") or exp.get("role") or exp.get("position") or "")
+        start_d = _format_date(exp.get("start") or exp.get("start_date") or "")
+        end_d = _format_date(exp.get("end") or exp.get("end_date") or "") or "Present"
         date_range = f"{start_d} – {end_d}" if start_d else end_d
 
         svg_snippet = f" {link_svg}" if "broadstone" in employer.lower() else ""
         head_left = f"<strong>{title}</strong>, <em>{employer}</em>{svg_snippet}"
         
-        bullet_lis = "\n  ".join(f"<li>{_html.escape(b)}</li>" for b in exp.get("bullets", []))
+        raw_bullets = exp.get("bullets") or exp.get("highlights") or exp.get("bullet_points") or []
+        if isinstance(raw_bullets, str):
+            raw_bullets = [raw_bullets]
+        bullet_lis = "\n  ".join(f"<li>{_html.escape(b)}</li>" for b in raw_bullets if b)
         
         blocks.append(
             f'<div class="entry">\n'
@@ -1638,12 +1641,12 @@ def render_education_html(candidate: Candidate) -> str:
 
     blocks = ["<h2>Education</h2>"]
     for e in entries:
-        degree = (e.get("degree") or "").strip()
-        field = (e.get("field") or "").strip()
-        institution = (e.get("institution") or "").strip()
-        location = (e.get("location") or "").strip()
-        start = (e.get("start") or "").strip()
-        end = (e.get("end") or e.get("graduation_date") or "").strip()
+        degree = (e.get("degree") or e.get("title") or "").strip()
+        field = (e.get("field") or e.get("major") or "").strip()
+        institution = (e.get("institution") or e.get("school") or e.get("university") or e.get("college") or "").strip()
+        location = (e.get("location") or e.get("city") or "").strip()
+        start = (e.get("start") or e.get("start_date") or "").strip()
+        end = (e.get("end") or e.get("graduation_date") or e.get("end_date") or "").strip()
         if (e.get("status") or "").strip().lower() == "in_progress":
             end = "present"
         if not (degree or institution):
