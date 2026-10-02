@@ -1477,35 +1477,87 @@ def clean_header_title(job_title: str, variant: str = "se_al") -> str:
 
 
 def sync_candidate_contact_info(html_content: str, candidate: Candidate | None) -> str:
-    """Synchronize contact details (LinkedIn, GitHub, Portfolio, Email, Phone) in resume HTML with candidate profile."""
+    """Synchronize contact details (Name, Email, Phone, LinkedIn, GitHub, Portfolio) in resume HTML with candidate profile."""
     if not candidate:
         return html_content
 
+    # 1. Update Candidate Name
+    if candidate.name and candidate.name.strip():
+        esc_name = _html.escape(candidate.name.strip())
+        html_content = re.sub(
+            r"(<span[^>]+class=[\"'\"][^\"'\"]*\bname\b[^\"'\"]*[\"'\"][^>]*>)[^<]*(</span>)",
+            r"\g<1>" + esc_name + r"\g<2>",
+            html_content,
+            flags=re.IGNORECASE,
+        )
+
+    # 2. Update Candidate Phone
+    if candidate.phone and candidate.phone.strip():
+        esc_phone = _html.escape(candidate.phone.strip())
+        html_content = re.sub(
+            r"(\+1\s*\(555\)\s*234-5678|\+1\s*555-234-5678|\+1\s*\(555\)\s*000-0000)",
+            esc_phone,
+            html_content,
+            flags=re.IGNORECASE,
+        )
+
+    # 3. Update Candidate Email
+    if candidate.email and candidate.email.strip():
+        esc_email = _html.escape(candidate.email.strip())
+        html_content = re.sub(
+            r"([a-zA-Z0-9_.+-]+@example\.com|alex\.morgan@example\.com)",
+            esc_email,
+            html_content,
+            flags=re.IGNORECASE,
+        )
+
+    # 4. Update Candidate Links
     links = getattr(candidate, "links", {}) or {}
-    linkedin_url = links.get("linkedin") or "https://www.linkedin.com/in/alexmorgan"
-    github_url = links.get("github") or "https://github.com/alexmorgan"
-    portfolio_url = links.get("portfolio") or "https://alexmorgan.dev"
+    linkedin_url = (links.get("linkedin") or "").strip()
+    github_url = (links.get("github") or "").strip()
+    portfolio_url = (links.get("portfolio") or links.get("website") or "").strip()
 
     if linkedin_url:
+        clean_linkedin_label = re.sub(r"^https?://(www\.)?", "", linkedin_url).rstrip("/")
         html_content = re.sub(
-            r'(<a\s+href=")[^"]*("(?:\s+[^>]*?)?>\s*LinkedIn\s*</a>)',
-            rf'\g<1>{linkedin_url}\g<2>',
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>)(linkedin\.com[^\s<]*)(</a>)",
+            r"\g<1>" + linkedin_url + r"\g<2>" + clean_linkedin_label + r"\g<4>",
+            html_content,
+            flags=re.IGNORECASE,
+        )
+        html_content = re.sub(
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>\s*LinkedIn\s*</a>)",
+            r"\g<1>" + linkedin_url + r"\g<2>",
             html_content,
             flags=re.IGNORECASE,
         )
 
     if github_url:
+        clean_github_label = re.sub(r"^https?://(www\.)?", "", github_url).rstrip("/")
         html_content = re.sub(
-            r'(<a\s+href=")[^"]*("(?:\s+[^>]*?)?>\s*GitHub\s*</a>)',
-            rf'\g<1>{github_url}\g<2>',
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>)(github\.com[^\s<]*)(</a>)",
+            r"\g<1>" + github_url + r"\g<2>" + clean_github_label + r"\g<4>",
+            html_content,
+            flags=re.IGNORECASE,
+        )
+        html_content = re.sub(
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>\s*GitHub\s*</a>)",
+            r"\g<1>" + github_url + r"\g<2>",
             html_content,
             flags=re.IGNORECASE,
         )
 
     if portfolio_url:
+        clean_port_label = re.sub(r"^https?://(www\.)?", "", portfolio_url).rstrip("/")
         html_content = re.sub(
-            r'(<a\s+href=")[^"]*("(?:\s+[^>]*?)?>\s*Portfolio\s*</a>)',
-            rf'\g<1>{portfolio_url}\g<2>',
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>)(alexmorgan\.dev[^\s<]*)(</a>)",
+            r"\g<1>" + portfolio_url + r"\g<2>" + clean_port_label + r"\g<4>",
+            html_content,
+            flags=re.IGNORECASE,
+        )
+        html_content = re.sub(
+            r"(<a\s+[^>]*href=\")[^\"]*(\"[^>]*>\s*Portfolio\s*</a>)",
+            r"\g<1>" + portfolio_url + r"\g<2>",
             html_content,
             flags=re.IGNORECASE,
         )

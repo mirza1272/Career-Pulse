@@ -123,14 +123,18 @@ def sync_from_supabase_to_memory(session: Session) -> None:
             jid = j.get("id")
             if not jid:
                 continue
+            j_uid = j.get("user_id")
             existing_j = session.get(Job, jid)
             if not existing_j and j.get("dedup_key"):
-                existing_j = session.scalar(select(Job).where(Job.dedup_key == j.get("dedup_key")))
+                if j_uid is not None:
+                    existing_j = session.scalar(select(Job).where(Job.dedup_key == j.get("dedup_key"), Job.user_id == j_uid))
+                else:
+                    existing_j = session.scalar(select(Job).where(Job.dedup_key == j.get("dedup_key"), Job.user_id.is_(None)))
             
             if not existing_j:
                 new_j = Job(
                     id=jid,
-                    user_id=j.get("user_id"),
+                    user_id=j_uid,
                     dedup_key=j.get("dedup_key") or f"job_{jid}",
                     title=j.get("title") or "",
                     company=j.get("company") or "",
@@ -150,8 +154,8 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                 existing_j.status = j.get("status") or existing_j.status
                 existing_j.title = j.get("title") or existing_j.title
                 existing_j.company = j.get("company") or existing_j.company
-                if j.get("user_id"):
-                    existing_j.user_id = j.get("user_id")
+                if j_uid is not None:
+                    existing_j.user_id = j_uid
 
         # 3. Hydrate Applications
         cloud_apps = sb.fetch_all_applications()
