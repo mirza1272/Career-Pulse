@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import datetime as dt
 import json
 import logging
+import sys
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -19,7 +20,7 @@ from sqlalchemy.pool import StaticPool
 
 from app import config
 from app.config import database_url
-from app.models import Application, Base, Job, ResumeVersion, User
+from app.models import Application, Base, EmailActivity, Job, ResumeVersion, User
 
 logger = logging.getLogger("careerpulse.db")
 
@@ -95,6 +96,13 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                     smtp_verified=bool(u.get("smtp_verified", False)),
                     knowledge_base_json=kb_cloud if kb_cloud and kb_cloud.strip() not in ("", "{}") else "{}",
                     selected_template_id=u.get("selected_template_id") or "apex_modern",
+                    gmail_connected=bool(u.get("gmail_connected", False)),
+                    gmail_email=u.get("gmail_email") or "",
+                    gmail_access_token_encrypted=u.get("gmail_access_token_encrypted") or "",
+                    gmail_refresh_token_encrypted=u.get("gmail_refresh_token_encrypted") or "",
+                    gmail_token_expires_at=_parse_dt(u.get("gmail_token_expires_at")),
+                    gmail_token_scopes=u.get("gmail_token_scopes") or "",
+                    gmail_connected_at=_parse_dt(u.get("gmail_connected_at")),
                     created_at=_parse_dt(u.get("created_at")) or dt.datetime.now(dt.timezone.utc),
                     updated_at=_parse_dt(u.get("updated_at")) or dt.datetime.now(dt.timezone.utc),
                 )
@@ -116,6 +124,20 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                     existing.selected_template_id = u.get("selected_template_id")
                 if kb_cloud and kb_cloud.strip() not in ("", "{}"):
                     existing.knowledge_base_json = kb_cloud
+                if "gmail_connected" in u:
+                    existing.gmail_connected = bool(u.get("gmail_connected", False))
+                if u.get("gmail_email"):
+                    existing.gmail_email = u.get("gmail_email")
+                if u.get("gmail_access_token_encrypted"):
+                    existing.gmail_access_token_encrypted = u.get("gmail_access_token_encrypted")
+                if u.get("gmail_refresh_token_encrypted"):
+                    existing.gmail_refresh_token_encrypted = u.get("gmail_refresh_token_encrypted")
+                if u.get("gmail_token_expires_at"):
+                    existing.gmail_token_expires_at = _parse_dt(u.get("gmail_token_expires_at"))
+                if u.get("gmail_token_scopes"):
+                    existing.gmail_token_scopes = u.get("gmail_token_scopes")
+                if u.get("gmail_connected_at"):
+                    existing.gmail_connected_at = _parse_dt(u.get("gmail_connected_at"))
 
         # 2. Hydrate Jobs
         cloud_jobs = sb.fetch_all_jobs(limit=1000)
@@ -181,6 +203,18 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                     ats_score=float(a.get("ats_score") or 0.0),
                     ats_attempts=int(a.get("ats_attempts") or 0),
                     ats_note=a.get("ats_note") or "",
+                    gmail_message_id=a.get("gmail_message_id") or "",
+                    gmail_thread_id=a.get("gmail_thread_id") or "",
+                    tracking_token=a.get("tracking_token") or "",
+                    opened_at=_parse_dt(a.get("opened_at")),
+                    open_count=int(a.get("open_count") or 0),
+                    bounced_at=_parse_dt(a.get("bounced_at")),
+                    bounce_reason=a.get("bounce_reason") or "",
+                    replied_at=_parse_dt(a.get("replied_at")),
+                    reply_snippet=a.get("reply_snippet") or "",
+                    followup_due_at=_parse_dt(a.get("followup_due_at")),
+                    followup_sent_at=_parse_dt(a.get("followup_sent_at")),
+                    followup_count=int(a.get("followup_count") or 0),
                     status=a.get("status") or "draft",
                     disposition=a.get("disposition") or "",
                     sent_at=_parse_dt(a.get("sent_at")),
@@ -200,6 +234,30 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                 existing_a.email = a.get("email") or existing_a.email
                 if a.get("template_id"):
                     existing_a.template_id = a.get("template_id")
+                if a.get("gmail_message_id"):
+                    existing_a.gmail_message_id = a.get("gmail_message_id")
+                if a.get("gmail_thread_id"):
+                    existing_a.gmail_thread_id = a.get("gmail_thread_id")
+                if a.get("tracking_token"):
+                    existing_a.tracking_token = a.get("tracking_token")
+                if a.get("opened_at"):
+                    existing_a.opened_at = _parse_dt(a.get("opened_at"))
+                if "open_count" in a:
+                    existing_a.open_count = int(a.get("open_count") or 0)
+                if a.get("bounced_at"):
+                    existing_a.bounced_at = _parse_dt(a.get("bounced_at"))
+                if a.get("bounce_reason"):
+                    existing_a.bounce_reason = a.get("bounce_reason")
+                if a.get("replied_at"):
+                    existing_a.replied_at = _parse_dt(a.get("replied_at"))
+                if a.get("reply_snippet"):
+                    existing_a.reply_snippet = a.get("reply_snippet")
+                if a.get("followup_due_at"):
+                    existing_a.followup_due_at = _parse_dt(a.get("followup_due_at"))
+                if a.get("followup_sent_at"):
+                    existing_a.followup_sent_at = _parse_dt(a.get("followup_sent_at"))
+                if "followup_count" in a:
+                    existing_a.followup_count = int(a.get("followup_count") or 0)
         # 4. Hydrate Resume Versions from Supabase Cloud
         try:
             cloud_versions = sb.fetch_all_resume_versions()
@@ -303,6 +361,29 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                             session.add(v1_row)
         except Exception as disk_exc:
             logger.debug(f"Disk resume version hydration note: {disk_exc}")
+
+        # 6. Hydrate Email Activities from Supabase Cloud
+        try:
+            cloud_activities = sb.fetch_all_email_activities(limit=200)
+            for act in cloud_activities:
+                act_id = act.get("id")
+                if not act_id:
+                    continue
+                existing_act = session.get(EmailActivity, int(act_id))
+                if not existing_act:
+                    new_act = EmailActivity(
+                        id=int(act_id),
+                        user_id=int(act.get("user_id") or 0),
+                        application_id=int(act.get("application_id")) if act.get("application_id") else None,
+                        event_type=act.get("event_type") or "sent",
+                        recipient=act.get("recipient") or "",
+                        subject=act.get("subject") or "",
+                        details_json=act.get("details_json") or "{}",
+                        created_at=_parse_dt(act.get("created_at")) or dt.datetime.now(dt.timezone.utc),
+                    )
+                    session.add(new_act)
+        except Exception as act_exc:
+            logger.debug(f"Cloud email activities sync note: {act_exc}")
 
         session.commit()
     except Exception as exc:
@@ -414,8 +495,9 @@ def seed_admin_user() -> None:
 def init_db() -> None:
     """Create in-memory schema, hydrate live data from Supabase, and ensure admin exists."""
     Base.metadata.create_all(_engine)
-    with get_session() as s:
-        sync_from_supabase_to_memory(s)
+    if not config.TEST_MODE and "pytest" not in sys.modules:
+        with get_session() as s:
+            sync_from_supabase_to_memory(s)
     seed_admin_user()
 
 

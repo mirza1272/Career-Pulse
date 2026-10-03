@@ -70,6 +70,15 @@ class User(Base):
     # User's globally preferred resume template (e.g. 'apex_modern', 'oxford_editorial')
     selected_template_id: Mapped[str] = mapped_column(String(50), default="apex_modern")
 
+    # Gmail Direct Integration (Google OAuth 2.0)
+    gmail_connected: Mapped[bool] = mapped_column(Boolean, default=False)
+    gmail_email: Mapped[str] = mapped_column(String(320), default="")
+    gmail_access_token_encrypted: Mapped[str] = mapped_column(Text, default="")
+    gmail_refresh_token_encrypted: Mapped[str] = mapped_column(Text, default="")
+    gmail_token_expires_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    gmail_token_scopes: Mapped[str] = mapped_column(Text, default="")
+    gmail_connected_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
@@ -104,12 +113,41 @@ class Application(Base):
     # overwrites. {REGION_NAME: final region HTML} re-applied on every recreate.
     resume_locks_json: Mapped[str] = mapped_column(Text, default="{}")
 
+    # Gmail & Activity Telemetry
+    gmail_message_id: Mapped[str] = mapped_column(String(120), default="")
+    gmail_thread_id: Mapped[str] = mapped_column(String(120), default="")
+    tracking_token: Mapped[str] = mapped_column(String(64), default="", index=True)
+    opened_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    open_count: Mapped[int] = mapped_column(Integer, default=0)
+    bounced_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    bounce_reason: Mapped[str] = mapped_column(Text, default="")
+    replied_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    reply_snippet: Mapped[str] = mapped_column(Text, default="")
+    followup_due_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    followup_sent_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    followup_count: Mapped[int] = mapped_column(Integer, default=0)
+
     # pending -> approved -> sent | failed
     status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
     disposition: Mapped[str] = mapped_column(String(40), default="")
     sent_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
+
+
+class EmailActivity(Base):
+    """Immutable audit trail for email activity events (sent, opened, replied, bounced, follow-up)."""
+
+    __tablename__ = "email_activities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("applications.id", ondelete="SET NULL"), nullable=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(40), index=True)  # sent | opened | replied | bounced | followup_sent
+    recipient: Mapped[str] = mapped_column(String(320), default="")
+    subject: Mapped[str] = mapped_column(String(400), default="")
+    details_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, index=True)
 
 
 class ResumeVersion(Base):
@@ -141,3 +179,4 @@ class ResumeVersion(Base):
     template_id: Mapped[str] = mapped_column(String(50), default="apex_modern")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
+

@@ -39,6 +39,11 @@ AUTH_PASSWORD: str = ""
 SESSION_SECRET: str = ""
 # No default OCR key: set OCR_SPACE_API_KEY in the environment if needed.
 OCR_SPACE_API_KEY: str = ""
+# Google OAuth 2.0 Direct Gmail Integration
+GOOGLE_CLIENT_ID: str = ""
+GOOGLE_CLIENT_SECRET: str = ""
+GOOGLE_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
+
 
 
 _env_last_mtime: float = 0.0
@@ -128,6 +133,7 @@ def reload_config() -> None:
     global OUTBOX_DIR, LLM_API_KEY, GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3
     global LLM_MODEL, FAST_LLM_MODEL, LLM_BASE_URL, is_serverless
     global ADMIN_EMAIL, AUTH_EMAIL, AUTH_PASSWORD, SESSION_SECRET, OCR_SPACE_API_KEY
+    global GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 
     _load_dotenv()
 
@@ -174,6 +180,12 @@ def reload_config() -> None:
     # local RapidOCR engine (when installed) and otherwise asks the user to
     # paste text — screenshots are never sent anywhere without a key.
     OCR_SPACE_API_KEY = os.environ.get("OCR_SPACE_API_KEY", "")
+
+    # Google OAuth 2.0 Credentials
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+    GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback").strip()
+
 
 
 def is_test_mode() -> bool:

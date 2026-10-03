@@ -471,7 +471,7 @@ def interpret_user_custom_instructions(
                 "categories_to_include": list(clean_cats_inc),
                 "categories_to_exclude": list(clean_cats_exc),
                 "skills_to_add": list(clean_skills_add),
-                "skills_to_remove": list(clean_skills_remove),
+                "skills_to_remove": list(clean_skills_rem),
                 "max_skills_per_category": res.get("max_skills_per_category") or deterministic.get("max_skills_per_category"),
                 "summary_draft": res.get("summary_draft"),
                 "section_order": res.get("section_order") or deterministic.get("section_order"),

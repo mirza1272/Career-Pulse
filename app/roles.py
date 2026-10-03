@@ -30,6 +30,12 @@ M_USER_PROVIDED = "user_provided"  # user typed a role not among detected
 M_USER_PICK = "user_pick"          # user picked one of the detected roles
 M_AI_PICK = "ai_pick"              # AI selected the best fit in one LLM call
 
+# Legacy state constants for backward compatibility
+JD_PARSED = "JD_PARSED"
+ROLES_DETECTED = "ROLES_DETECTED"
+ROLE_RESOLVED = "ROLE_RESOLVED"
+AI_SELECTS_ROLE = "AI_SELECTS_ROLE"
+
 _MAX_ROLES = 6
 
 
@@ -47,15 +53,28 @@ class RoleResolution:
         role: str = "",
         method: str = "",
         reason: str = "",
+        state: str = "",
     ) -> None:
         self.roles = roles or []
         self.role = role
         self.method = method
         self.reason = reason
+        if state:
+            self._state = state
+        elif roles is None and not role and not method:
+            self._state = JD_PARSED
+        elif len(self.roles) > 1 and not role and not method:
+            self._state = ROLES_DETECTED
+        else:
+            self._state = ROLE_RESOLVED
+
+    @property
+    def state(self) -> str:
+        return self._state
 
     @property
     def resolved(self) -> bool:
-        return True
+        return self._state == ROLE_RESOLVED or self.method == M_AUTO_NONE
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper
         return (
@@ -266,3 +285,70 @@ def detect_and_select_role(
         logger.warning("detect_and_select_role LLM failed, using rule-based fallback: %s", exc)
 
     return _fallback_resolution(text, job_title)
+
+
+def detect_roles(jd_text: str, job_title: str = "") -> list[str]:
+    """Backward-compatible helper for rule-based role detection."""
+    return _rule_based_detect(jd_text, job_title)
+
+
+def ai_select_role(jd_text: str, roles: list[str], candidate=None) -> tuple[str, str]:
+    """Backward-compatible helper for AI role selection."""
+    if not roles:
+        return "", ""
+    return roles[0], "first role"
+
+
+def resolve_role(
+    jd_text: str,
+    job_title: str = "",
+    user_pick: str = "",
+    skip_ai: bool = False,
+    roles: list[str] | None = None,
+    candidate=None,
+) -> RoleResolution:
+    """Backward-compatible multi-step state machine resolution."""
+    detected = roles if roles is not None else _rule_based_detect(jd_text, job_title)
+    pick = (user_pick or "").strip()
+    if pick:
+        match = _match_pick(pick, detected)
+        return RoleResolution(
+            roles=detected,
+            role=match or pick,
+            method=M_USER_PICK if match else M_USER_PROVIDED,
+            reason="matched a detected role" if match else "typed by user",
+            state=ROLE_RESOLVED,
+        )
+    if not detected:
+        return RoleResolution(
+            roles=[],
+            role="",
+            method=M_AUTO_NONE,
+            reason="no roles found",
+            state=ROLE_RESOLVED,
+        )
+    if len(detected) == 1:
+        return RoleResolution(
+            roles=detected,
+            role=detected[0],
+            method=M_AUTO_SINGLE,
+            reason="single role",
+            state=ROLE_RESOLVED,
+        )
+    if skip_ai:
+        return RoleResolution(
+            roles=detected,
+            role=detected[0],
+            method=M_AI_PICK,
+            reason="first role selected",
+            state=ROLE_RESOLVED,
+        )
+    # Multi-role without user pick or skip_ai
+    return RoleResolution(
+        roles=detected,
+        role="",
+        method="",
+        reason="multiple roles detected",
+        state=ROLES_DETECTED,
+    )
+

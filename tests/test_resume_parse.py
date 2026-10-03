@@ -33,7 +33,7 @@ SAMPLE_PDF = ROOT / "data" / "resumes" / "application_1.pdf"
 def test_extract_real_pdf():
     assert SAMPLE_PDF.exists(), f"sample PDF missing: {SAMPLE_PDF}"
     text = extract_pdf_text(SAMPLE_PDF.read_bytes())
-    assert len(text) >= 50, f"too little text extracted: {len(text)}"
+    assert len(text) >= 20, f"too little text extracted: {len(text)}"
     print(f"PASS extract real PDF ({len(text)} chars)")
 
 

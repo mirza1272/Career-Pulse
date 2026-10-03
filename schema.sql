@@ -267,3 +267,68 @@ SELECT id, job_title, company, status, disposition, created_at
 FROM public.applications
 WHERE user_id IS NULL
 ORDER BY created_at DESC;
+
+-- ============================================================
+-- SUPABASE MANUAL ACTION REQUIRED
+-- Run the following SQL in Supabase SQL Editor.
+-- ============================================================
+-- MIGRATION E: Gmail OAuth Integration & Email Activity Tracking (2026-10-03).
+-- What:
+--   1. Adds Gmail OAuth columns to `users` (encrypted access/refresh tokens, expiration, scopes).
+--   2. Adds message/thread and telemetry columns to `applications` (tracking token, opens, replies, bounces, followups).
+--   3. Creates `email_activities` table with indexes for immutable event logging.
+--   4. Configures Row Level Security (RLS) denying public anon/authenticated access (service_role only).
+-- Safe:
+--   All changes are strictly ADDITIVE with non-destructive defaults (IF NOT EXISTS).
+--   Existing SMTP credentials, user data, and application history remain 100% intact.
+
+-- 1. Add Gmail OAuth columns to users
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS gmail_connected BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS gmail_email VARCHAR(320) DEFAULT '',
+ADD COLUMN IF NOT EXISTS gmail_access_token_encrypted TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS gmail_refresh_token_encrypted TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS gmail_token_expires_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS gmail_token_scopes TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS gmail_connected_at TIMESTAMPTZ;
+
+-- 2. Add message, thread, and tracking columns to applications
+ALTER TABLE public.applications
+ADD COLUMN IF NOT EXISTS gmail_message_id VARCHAR(120) DEFAULT '',
+ADD COLUMN IF NOT EXISTS gmail_thread_id VARCHAR(120) DEFAULT '',
+ADD COLUMN IF NOT EXISTS tracking_token VARCHAR(64) DEFAULT '',
+ADD COLUMN IF NOT EXISTS opened_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS open_count INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS bounced_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS bounce_reason TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS reply_snippet TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS followup_due_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS followup_sent_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS followup_count INTEGER DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_applications_tracking_token ON public.applications(tracking_token);
+CREATE INDEX IF NOT EXISTS idx_applications_gmail_thread ON public.applications(gmail_thread_id);
+
+-- 3. Create email_activities table
+CREATE TABLE IF NOT EXISTS public.email_activities (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    application_id BIGINT REFERENCES public.applications(id) ON DELETE SET NULL,
+    event_type VARCHAR(40) NOT NULL,
+    recipient VARCHAR(320) DEFAULT '',
+    subject VARCHAR(400) DEFAULT '',
+    details_json TEXT DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_activities_user_id ON public.email_activities(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_activities_application_id ON public.email_activities(application_id);
+CREATE INDEX IF NOT EXISTS idx_email_activities_event_type ON public.email_activities(event_type);
+CREATE INDEX IF NOT EXISTS idx_email_activities_created_at ON public.email_activities(created_at);
+
+-- 4. Access Privileges & RLS for email_activities
+ALTER TABLE public.email_activities ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE public.email_activities TO postgres, service_role;
+REVOKE ALL ON TABLE public.email_activities FROM anon, authenticated;
+

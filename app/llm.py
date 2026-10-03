@@ -101,9 +101,9 @@ def _post(
         return None
 
     primary = payload.get("model", config.LLM_MODEL)
-    fallback_models = ["openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+    fallback_models = ["llama-3.3-70b-versatile", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
     models_to_try = [primary]
-    for extra in (fallback_model, config.FAST_LLM_MODEL):
+    for extra in (fallback_model,):
         if extra and extra not in models_to_try and extra not in fallback_models:
             models_to_try.append(extra)
     models_to_try.extend(m for m in fallback_models if m not in models_to_try)

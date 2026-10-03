@@ -423,6 +423,41 @@ class SupabaseClient:
             logger.warning(f"Supabase delete resume_version error: {e}")
             return False
 
+    def insert_email_activity(self, data: dict[str, Any]) -> dict[str, Any] | None:
+        """Insert an email activity event row into Supabase public.email_activities table."""
+        if not self.is_configured:
+            return None
+        clean_data = {k: v for k, v in data.items() if v is not None}
+        url = f"{self.base_url}/rest/v1/email_activities"
+        try:
+            with httpx.Client(timeout=self.timeout_s) as client:
+                res = client.post(url, json=clean_data, headers=self._headers(prefer_return=True))
+                if res.status_code in (200, 201):
+                    rows = res.json()
+                    return rows[0] if isinstance(rows, list) and rows else rows
+                logger.debug(f"Supabase email_activity insert returned {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            logger.debug(f"Supabase email_activity insert error: {e}")
+        return None
+
+    def fetch_all_email_activities(self, user_id: int | None = None, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch stored email activities from Supabase public.email_activities table."""
+        if not self.is_configured:
+            return []
+        query_params = ["select=*"]
+        if user_id is not None:
+            query_params.append(f"user_id=eq.{user_id}")
+        query_params.append(f"order=created_at.desc&limit={limit}")
+        url = f"{self.base_url}/rest/v1/email_activities?{'&'.join(query_params)}"
+        try:
+            with httpx.Client(timeout=self.timeout_s) as client:
+                res = client.get(url, headers=self._headers(prefer_return=False))
+                if res.status_code == 200:
+                    data = res.json()
+                    return data if isinstance(data, list) else []
+        except Exception as e:
+            logger.debug(f"Supabase fetch_all_email_activities error: {e}")
+        return []
 
     def update_job_status(
         self,

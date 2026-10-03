@@ -288,14 +288,15 @@ def heuristic_parse_resume_text(raw_text: str, extracted_links: list[str] | None
         if "@" in line or "linkedin" in line.lower() or "github" in line.lower():
             continue
         # Split candidate name from trailing role title if present (e.g. "Haseeb Ur Rahman Full-Stack Developer")
-        parts = [p.strip() for p in re.split(r"\s{2,}|\s*[|•–—,-]\s*", line) if p.strip()]
-        cand_name = parts[0] if parts else line
+        cand_name = line
         for title_term in [
             "Full-Stack Developer", "Full Stack Developer", "Full-Stack", "Full Stack",
             "Software Engineer", "ML Engineer", "AI Engineer", "AI / ML Engineer",
             "Data Scientist", "Backend Developer", "Frontend Developer", "Developer", "Engineer"
         ]:
-            cand_name = re.sub(rf"\b{re.escape(title_term)}\b.*", "", cand_name, flags=re.I).strip()
+            cand_name = re.sub(rf"(?i)\b{re.escape(title_term)}\b.*", "", cand_name).strip()
+        parts = [p.strip() for p in re.split(r"\s{2,}|\s*[|•–—,]\s*|\s+-\s+", cand_name) if p.strip()]
+        cand_name = parts[0] if parts else cand_name
         cand_name = re.sub(r"[^\w\s.-]", "", cand_name).strip()
         if cand_name and len(cand_name.split()) >= 2:
             name = cand_name
