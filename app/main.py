@@ -418,6 +418,13 @@ def create_app() -> FastAPI:
         )
         return Response(content=svg, media_type="image/svg+xml")
 
+    @app.get("/google6075cb8c86909075.html", response_class=HTMLResponse, include_in_schema=False)
+    def google_site_verification() -> Response:
+        """Serve Google Search Console site verification file."""
+        file_path = ROOT / "google6075cb8c86909075.html"
+        content = file_path.read_text(encoding="utf-8") if file_path.exists() else "google-site-verification: google6075cb8c86909075.html"
+        return Response(content=content, media_type="text/html", status_code=200)
+
     # ---- API: Radar (Project 1) pushes email-jobs here -------------------
     @app.post("/api/applications")
     def api_create(request: Request, body: ApplicationIn) -> dict[str, object]:
@@ -447,7 +454,7 @@ def create_app() -> FastAPI:
         config.ensure_fresh_config()
         path = request.url.path
         if (
-            path in ("/login", "/logout", "/health", "/api/health", "/privacy", "/terms")
+            path in ("/login", "/logout", "/health", "/api/health", "/privacy", "/terms", "/google6075cb8c86909075.html")
             or path.startswith("/assets/")
             or path.startswith("/track/open/")
             or path == "/favicon.ico"
@@ -478,6 +485,7 @@ def create_app() -> FastAPI:
             "/change-password",
             "/privacy",
             "/terms",
+            "/google6075cb8c86909075.html",
             "/logout",
             "/health",
             "/api/health",

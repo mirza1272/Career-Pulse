@@ -85,6 +85,14 @@ def test_login_page_links_to_privacy_and_terms():
     assert 'href="/terms"' in r_login.text
 
 
+def test_google_search_console_verification_file_public_access():
+    """Verify Google Search Console verification HTML file loads publicly with status 200."""
+    client = TestClient(app)
+    resp = client.get("/google6075cb8c86909075.html")
+    assert resp.status_code == 200
+    assert resp.text.strip() == "google-site-verification: google6075cb8c86909075.html"
+
+
 # =============================================================================
 # 2. FOLLOW-UP POLICY: UNOPENED EMAIL (1 FOLLOW-UP MAX)
 # =============================================================================
