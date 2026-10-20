@@ -17,6 +17,7 @@ from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -90,6 +91,7 @@ from app.resume_builder import (
     parse_resume_regions_detail,
     rebuild_resume_from_custom_edits,
     render_pdf_from_html,
+    pdf_uses_current_renderer,
     replace_regions,
     resolve_template,
     skills_html_to_csv,
@@ -152,6 +154,51 @@ def _atomic_write_bytes(path: Path, content: bytes) -> None:
         except OSError:
             pass
         raise
+
+
+def _resolve_resume_pdf(row: Application, candidate) -> Path:
+    """Use the selected attachment for preview, download and send alike."""
+    stored = Path(row.resume_path) if row.resume_path else None
+    html_path = RESUMES_OUTPUT_DIR / f"application_{row.id}.html"
+    if stored and stored.suffix.lower() != ".pdf":
+        if stored.suffix.lower() == ".html" and stored.is_file():
+            html_path = stored
+        stored = None
+    custom = bool(stored and stored.name.endswith("_custom.pdf"))
+    pdf_path = stored if stored and stored.is_file() else None
+    if stored and pdf_path is None:
+        relocated = RESUMES_OUTPUT_DIR / stored.name
+        if relocated.is_file():
+            pdf_path = relocated
+        else:
+            from app.supabase_storage import download_resume_from_supabase
+            content = download_resume_from_supabase(stored.name)
+            if content:
+                _atomic_write_bytes(relocated, content)
+                pdf_path = relocated
+    if pdf_path:
+        with pdf_path.open("rb") as stream:
+            if stream.read(5) != b"%PDF-":
+                pdf_path = None
+    if pdf_path and (custom or row.status == "sent" or not html_path.exists()
+                     or (pdf_path.stat().st_mtime >= html_path.stat().st_mtime
+                         and pdf_uses_current_renderer(pdf_path))):
+        row.resume_path = str(pdf_path)
+        return pdf_path
+    if custom or row.status == "sent":
+        raise HTTPException(status_code=404, detail="The original resume PDF is unavailable. Restore or upload the original file; it will not be replaced with a different resume.")
+    if not html_path.exists():
+        built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "",
+                                     variant=row.template_id or "apex_modern")
+        content = replace_regions(built.html_content, json.loads(row.resume_locks_json or "{}"))
+        _atomic_write_text(html_path, content)
+    pdf_path = RESUMES_OUTPUT_DIR / f"application_{row.id}.pdf"
+    try:
+        render_pdf_from_html(html_path, pdf_path, page_target=row.pdf_page_target or 1)
+    except PageOverflowError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    row.resume_path = str(pdf_path)
+    return pdf_path
 
 
 # Cloud re-hydration is expensive (full PostgREST pull of all tables). Page
@@ -378,6 +425,7 @@ class ApplicationIn(BaseModel):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Career Pulse")
+    app.mount("/assets", StaticFiles(directory=str(PROJECT_ROOT / "assets")), name="assets")
     try:
         init_db()
     except Exception as exc:
@@ -1450,21 +1498,6 @@ def create_app() -> FastAPI:
                 Application.user_id == user.id, Application.bounced_at.is_not(None)
             ).scalar() or 0
 
-            now_utc = dt.datetime.now(dt.timezone.utc)
-            followup_due_apps = s.query(Application).filter(
-                Application.user_id == user.id,
-                Application.status == "sent",
-                Application.replied_at.is_(None),
-                Application.followup_sent_at.is_(None),
-                Application.followup_due_at.is_not(None),
-                Application.followup_due_at <= now_utc,
-            ).order_by(Application.followup_due_at.asc()).limit(5).all()
-            followup_due_count = len(followup_due_apps)
-
-            followup_sent_count = s.query(sa_func.count(Application.id)).filter(
-                Application.user_id == user.id, Application.followup_sent_at.is_not(None)
-            ).scalar() or 0
-
             recent_activities = s.query(EmailActivity).filter(
                 EmailActivity.user_id == user.id
             ).order_by(EmailActivity.created_at.desc()).limit(6).all()
@@ -1541,9 +1574,6 @@ def create_app() -> FastAPI:
                 "email_bounced_count": email_bounced_count,
                 "email_open_rate": email_open_rate,
                 "email_reply_rate": email_reply_rate,
-                "followup_due_count": followup_due_count,
-                "followup_due_apps": followup_due_apps,
-                "followup_sent_count": followup_sent_count,
                 "recent_activities": recent_activities,
             },
         )
@@ -2151,9 +2181,8 @@ def create_app() -> FastAPI:
             if not _owns_application(user, row):
                 raise HTTPException(status_code=403, detail="Forbidden.")
 
-            # User approved & dispatched via modal action
-            if (row.status or "") != "sent":
-                row.status = "approved"
+            if row.status == "sent":
+                return RedirectResponse(url=f"/application/{app_id}?error=This application has already been sent.", status_code=303)
 
             app_user = s.get(User, row.user_id) if row.user_id else user
             effective_user = app_user or user
@@ -2172,32 +2201,17 @@ def create_app() -> FastAPI:
                     url=f"/application/{app_id}?error=Please provide a valid recipient email address before dispatching.",
                     status_code=303,
                 )
-            # Always ensure fresh, complete resume HTML & PDF are rendered before sending
-            html_path = RESUMES_OUTPUT_DIR / f"application_{app_id}.html"
-            if not html_path.exists():
-                candidate = load_candidate_for_user(effective_user) if effective_user else load_candidate()
-                tmpl_id = row.template_id or getattr(effective_user, "selected_template_id", None) or "apex_modern"
-                built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "", variant=tmpl_id)
-                try:
-                    _atomic_write_text(html_path, built.html_content)
-                except OSError:
-                    pass
-            pdf_target = RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"
+            candidate = load_candidate_for_user(effective_user) if effective_user else load_candidate()
             try:
-                if not pdf_target.exists() or (html_path.exists() and pdf_target.stat().st_mtime < html_path.stat().st_mtime):
-                    render_pdf_from_html(html_path, pdf_target)
-                row.resume_path = str(pdf_target)
-                s.commit()
-            except PageOverflowError as exc:
-                # Real page-count enforcement — never attach a clipped PDF.
-                # Page handling is automatic; the user must trim content.
+                pdf_target = _resolve_resume_pdf(row, candidate)
+            except Exception as exc:
+                from urllib.parse import quote
+                detail = exc.detail if isinstance(exc, HTTPException) else "Resume PDF could not be prepared. Please retry before sending."
                 return RedirectResponse(
-                    url=f"/application/{app_id}?error={exc}",
-                    status_code=303,
+                    url=f"/application/{app_id}?error={quote(str(detail))}", status_code=303,
                 )
-            except Exception:
-                pass
 
+            row.status = "approved"
             if not getattr(row, "tracking_token", None):
                 import secrets
                 row.tracking_token = secrets.token_urlsafe(24)
@@ -2207,7 +2221,7 @@ def create_app() -> FastAPI:
                 intended_recipient=row.email,
                 subject=subject,
                 body=row.drafted_email,
-                resume_pdf_path=str(pdf_target) if pdf_target.exists() else None,
+                resume_pdf_path=str(pdf_target),
                 user=effective_user,
                 application=row,
                 db_session=s,
@@ -3080,7 +3094,7 @@ def create_app() -> FastAPI:
 
     # ---- Resume Delivery Endpoints ----------------------------------------
     @app.get("/application/{app_id}/resume.pdf")
-    def application_resume_pdf(app_id: int, request: Request):
+    def application_resume_pdf(app_id: int, request: Request, download: bool = False):
         user = getattr(request.state, "current_user", None)
         with get_session() as s:
             row = s.get(Application, app_id)
@@ -3092,27 +3106,8 @@ def create_app() -> FastAPI:
             app_user = s.get(User, row.user_id) if row.user_id else user
             candidate = load_candidate_for_user(app_user) if app_user else load_candidate(user)
 
-            pdf_path = Path(row.resume_path) if row.resume_path else None
-            if not pdf_path or not pdf_path.exists():
-                html_path = RESUMES_OUTPUT_DIR / f"application_{app_id}.html"
-                if not html_path.exists():
-                    tmpl_id = row.template_id or getattr(app_user, "selected_template_id", None) or "apex_modern"
-                    built = build_resume_content(candidate, row.jd_text or "", job_title=row.job_title or "", variant=tmpl_id)
-                    try:
-                        _atomic_write_text(html_path, built.html_content)
-                    except OSError:
-                        pass
-                pdf_target = RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"
-                try:
-                    render_pdf_from_html(html_path, pdf_target)
-                    row.resume_path = str(pdf_target)
-                    s.commit()
-                    pdf_path = pdf_target
-                except PageOverflowError as exc:
-                    # User-fixable: trim content and retry (page handling is automatic).
-                    raise HTTPException(status_code=422, detail=str(exc))
-                except Exception as exc:
-                    raise HTTPException(status_code=500, detail=f"Failed to generate resume PDF: {exc}")
+            pdf_path = _resolve_resume_pdf(row, candidate)
+            s.commit()
 
             raw_name = candidate.name.strip() if candidate and candidate.name else "Resume"
             clean_name = re.sub(r"[^\w\-]", "", raw_name.replace(" ", "-")) or "Resume"
@@ -3121,7 +3116,8 @@ def create_app() -> FastAPI:
                 path=str(pdf_path),
                 media_type="application/pdf",
                 filename=filename,
-                content_disposition_type="inline",
+                content_disposition_type="attachment" if download else "inline",
+                headers={"Cache-Control": "private, no-store"},
             )
 
     @app.get("/application/{app_id}/resume.html", response_class=HTMLResponse)
@@ -3188,6 +3184,8 @@ def create_app() -> FastAPI:
   }
 """
                 content = content.replace("</style>", f"{screen_css}\n</style>")
+
+            content = content.replace((PROJECT_ROOT / "assets/fonts").as_uri(), "/assets/fonts")
 
             # Ensure any aggressive legacy autoFitResume loop is stripped so text never gets crushed
             content = re.sub(r"<script>\s*\(function autoFitResume\(\)[\s\S]*?</script>", "", content)
@@ -3355,9 +3353,10 @@ def create_app() -> FastAPI:
             # step reports the overflow so the user can switch to 2 pages.
             pdf_error = ""
             try:
-                render_pdf_from_html(html_file, pdf_path)
+                render_pdf_from_html(html_file, pdf_path, page_target=row.pdf_page_target or 1)
             except PageOverflowError as exc:
                 pdf_error = str(exc)
+                pdf_path.unlink(missing_ok=True)
 
             new_score = score_resume(
                 built.resume_text,
@@ -3635,6 +3634,11 @@ def create_app() -> FastAPI:
             if not _owns_application(user, row):
                 raise HTTPException(status_code=403, detail="Forbidden.")
 
+            if (row.resume_path or "").endswith("_custom.pdf"):
+                raise HTTPException(status_code=409, detail="Uploaded PDFs keep their original layout. Revert to the generated resume before changing page count.")
+            if row.status == "sent":
+                raise HTTPException(status_code=409, detail="The sent resume cannot be reformatted.")
+            _reset_approval_to_ready(row)
             row.pdf_page_target = pages
             html_p = RESUMES_OUTPUT_DIR / f"application_{app_id}.html"
             pdf_p = RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"
@@ -3692,7 +3696,7 @@ def create_app() -> FastAPI:
             _atomic_write_text(html_file, restored_html)
             pdf_path = RESUMES_OUTPUT_DIR / f"application_{app_id}.pdf"
             try:
-                render_pdf_from_html(html_file, pdf_path)
+                render_pdf_from_html(html_file, pdf_path, page_target=row.pdf_page_target or 1)
             except PageOverflowError as exc:
                 s.commit()
                 return RedirectResponse(
@@ -3836,6 +3840,7 @@ def create_app() -> FastAPI:
                 row.resume_path = str(pdf_path)
             except PageOverflowError as exc:
                 pdf_error = str(exc)
+                pdf_path.unlink(missing_ok=True)
             except Exception as exc:
                 logger.warning(f"PDF compilation error on template change for app {app_id}: {exc}")
 
@@ -3918,12 +3923,12 @@ def create_app() -> FastAPI:
             variant=valid_id,
             max_projects=5,
         )
-        content = built.html_content
+        content = built.html_content.replace((PROJECT_ROOT / "assets/fonts").as_uri(), "/assets/fonts")
         return HTMLResponse(
             content=content,
             headers={
                 "Content-Security-Policy": (
-                    "default-src 'none'; style-src 'unsafe-inline'; "
+                    "default-src 'none'; style-src 'self' 'unsafe-inline'; "
                     "img-src 'self' data:; font-src 'self' data:;"
                 )
             },

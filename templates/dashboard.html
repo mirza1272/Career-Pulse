@@ -902,47 +902,8 @@
       </div>
     </div>
 
-    <!-- TWO SUB-COLUMNS: FOLLOW-UP ATTENTION & RECENT ACTIVITY AUDIT -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-      
-      <!-- SUB-COLUMN 1: FOLLOW-UP ATTENTION QUEUE -->
-      <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--dash-border); border-radius: 10px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <strong style="font-size: 12.5px; color: #f8fafc; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            Follow-Up Attention Queue
-          </strong>
-          <span class="badge" style="font-size: 10.5px; background: {% if followup_due_count > 0 %}rgba(245,158,11,0.15){% else %}rgba(255,255,255,0.05){% endif %}; color: {% if followup_due_count > 0 %}#fbbf24{% else %}var(--muted){% endif %};">
-            {{ followup_due_count }} due
-          </span>
-        </div>
-
-        {% if followup_due_apps %}
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          {% for fa in followup_due_apps %}
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--dash-border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-            <div style="min-width: 0; flex: 1;">
-              <div style="font-weight: 600; color: #f8fafc; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ fa.job_title or '(Untitled Role)' }}
-              </div>
-              <div style="font-size: 11.5px; color: var(--muted); margin-top: 2px;">
-                {{ fa.company }} &bull; Sent {{ fa.sent_at.strftime('%b %d') if fa.sent_at else 'recently' }}
-              </div>
-            </div>
-            <a href="/application/{{ fa.id }}" class="btn secondary" style="padding: 4px 10px; font-size: 11.5px; white-space: nowrap;">
-              Review Follow-Up
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <div style="text-align: center; padding: 24px 12px; color: var(--muted); font-size: 12.5px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin: 0 auto 6px; display: block;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-          All dispatched applications are on track. No follow-ups currently due.
-        </div>
-        {% endif %}
-      </div>
-
+    <!-- RECENT EMAIL ACTIVITY AUDIT -->
+    <div>
       <!-- SUB-COLUMN 2: RECENT EMAIL ACTIVITY AUDIT -->
       <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--dash-border); border-radius: 10px; padding: 14px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">

@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 import pytest
 from app.knowledge import load_candidate
 from app.tailor import tailor_application_resume, interpret_user_custom_instructions
@@ -99,8 +100,8 @@ def test_custom_focus_project_filtering():
     assert "income classification" not in projects_html.lower()
 
 
-def test_custom_focus_add_skills_and_focus():
-    candidate = load_candidate()
+def test_custom_focus_keeps_skills_grounded_and_focuses_summary():
+    candidate = replace(load_candidate(), skills=["python", "fastapi"])
     prompt = "Add Docker and Kubernetes to skills, make summary focus on Senior AI Engineer"
 
     res = tailor_application_resume(
@@ -119,9 +120,10 @@ def test_custom_focus_add_skills_and_focus():
     skills_html = regions.get("SKILLS", "")
     summary_html = regions.get("SUMMARY", "")
 
-    # Docker and Kubernetes should be present in skills
-    assert "Docker" in skills_html
-    assert "Kubernetes" in skills_html
+    # AI instructions cannot attest to skills absent from the knowledge base.
+    assert "Docker" not in skills_html
+    assert "Kubernetes" not in skills_html
+    assert "FastAPI" in skills_html
     assert any(k in summary_html.lower() for k in ["ai", "engineer", "python", "developer"])
 
 

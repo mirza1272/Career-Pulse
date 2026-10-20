@@ -23,7 +23,6 @@ from typing import Any
 from app import config
 from app.knowledge import Candidate, load_candidate
 from app.skill_aliases import (
-    SKILL_ALIASES,
     all_phrasings,
     canonical_skill,
     normalize_skill,
@@ -149,7 +148,9 @@ def _is_safe_link_url(url: str) -> bool:
 CANONICAL_DISPLAY_MAP: dict[str, str] = {
     "python": "Python",
     "machine learning": "Machine Learning",
+    "ml": "Machine Learning",
     "deep learning": "Deep Learning",
+    "dl": "Deep Learning",
     "rag": "RAG",
     "llms": "LLMs",
     "llm": "LLMs",
@@ -301,21 +302,10 @@ def _display_name_map() -> dict[str, str]:
         for _cat_skills in CANDIDATE_SKILL_CATEGORIES.values():
             for _disp in _cat_skills:
                 _DISPLAY_NAME_BY_NORM.setdefault(normalize_skill(_disp), _disp)
-        for _canon_norm, _aliases in SKILL_ALIASES.items():
-            # Resolve the canonical key to a display name: direct taxonomy
-            # hit first, otherwise via any of its aliases (e.g. canonical
-            # "node" -> alias "node js" -> display "Node.js").
-            _disp = _DISPLAY_NAME_BY_NORM.get(_canon_norm)
-            if not _disp:
-                for _a in _aliases:
-                    _disp = _DISPLAY_NAME_BY_NORM.get(normalize_skill(_a))
-                    if _disp:
-                        break
-            if not _disp:
-                continue
-            _DISPLAY_NAME_BY_NORM.setdefault(_canon_norm, _disp)
-            for _a in _aliases:
-                _DISPLAY_NAME_BY_NORM.setdefault(normalize_skill(_a), _disp)
+        # ATS aliases include related technologies, not just alternate spelling.
+        # Using them for display would turn "data validation" into "Pydantic".
+        for _name, _disp in CANONICAL_DISPLAY_MAP.items():
+            _DISPLAY_NAME_BY_NORM.setdefault(normalize_skill(_name), _disp)
     return _DISPLAY_NAME_BY_NORM
 
 
@@ -366,6 +356,7 @@ is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNC
 RESUMES_OUTPUT_DIR = Path("/tmp/resumes") if is_serverless else (ROOT / "data/resumes")
 
 FONT_DIR_TOKEN = "{{FONT_DIR}}"
+PDF_RENDERER_VERSION = "Career Pulse PDF 2026-10-21.2"
 _REGION_RE = re.compile(
     r"<!--REGION:([A-Za-z0-9_]+)-->(.*?)<!--END:\1-->",
     re.DOTALL,
@@ -825,37 +816,16 @@ def generate_tailored_skills_html(
     max_categories: int | None = None,
 ) -> str:
     """Generate ATS-optimized skills list, prioritizing JD-matched skills and categories.
-    Guaranteed: 100% strictly candidate-attested skills (plus user custom additions), dynamically categorized.
+    Target suggestions only prioritize existing KB skills; they never add claims.
     """
     jd_lower = f"{job_title} {jd_text}".lower()
-    target_set = {s.lower().strip() for s in (extra_target_skills or []) if s and s.strip()}
-    
-    # Include any custom requested skills in the candidate skill set for this tailored build
-    custom_additions = [s.strip() for s in (extra_target_skills or []) if s and s.strip()]
-    merged_skills = list(candidate.skills or [])
-    for cs in custom_additions:
-        if not any(cs.lower() == s.lower() for s in merged_skills):
-            merged_skills.append(cs)
-    
-    candidate_skills_set = {s.lower() for s in merged_skills}
+    target_set = {canonical_skill(s) for s in (extra_target_skills or []) if s and s.strip()}
 
     excluded_skills_set = {s.lower().strip() for s in (excluded_skills or []) if s and s.strip()}
     allowed_cats_lower = [c.lower().strip() for c in (allowed_categories or []) if c and c.strip()]
     excluded_cats_lower = [c.lower().strip() for c in (excluded_categories or []) if c and c.strip()]
 
-    # Dynamically extract all categorized skills including additions
-    temp_candidate = Candidate(
-        name=candidate.name,
-        email=candidate.email,
-        phone=candidate.phone,
-        skills=merged_skills,
-        projects=candidate.projects,
-        experience=candidate.experience,
-        education=candidate.education,
-        certifications=candidate.certifications,
-        links=candidate.links,
-    )
-    candidate_categories = get_categorized_candidate_skills(temp_candidate)
+    candidate_categories = get_categorized_candidate_skills(candidate)
     scored_cats: list[tuple[float, str, list[str]]] = []
 
     is_frontend_role = variant == "se_fd" or any(k in jd_lower for k in ["frontend", "react", "next.js", "vue", "web developer", "ui", "ux", "mern", "full stack", "fullstack"])
@@ -878,9 +848,7 @@ def generate_tailored_skills_html(
         # Filter to candidate-attested skills minus exclusions
         attested = [
             s for s in raw_skills
-            if (s.lower() in candidate_skills_set
-                or any(skill_matches(s, cs) for cs in candidate_skills_set))
-            and s.lower() not in excluded_skills_set
+            if s.lower() not in excluded_skills_set
             and not any(ex == s.lower() or (len(ex) >= 3 and ex in s.lower()) for ex in excluded_skills_set)
         ]
         if not attested:
@@ -889,7 +857,7 @@ def generate_tailored_skills_html(
         # Split into JD matched / targeted vs unmatched
         matched = [
             s for s in attested
-            if s.lower() in target_set or any(t in s.lower() or s.lower() in t for t in target_set) or _match_skill_in_text(s, jd_lower)
+            if canonical_skill(s) in target_set or _match_skill_in_text(s, jd_lower)
         ]
         unmatched = [s for s in attested if s not in matched]
 
@@ -2340,6 +2308,8 @@ def _clean_text_for_pdf(text: str) -> str:
         return ""
     replacements = {
         "\u00a0": " ",    # non-breaking space
+        "\u2010": "-",    # normalize hyphens unsupported by bundled font subsets
+        "\u2011": "-",
         "\u200b": "",     # zero-width space
         "\u200e": "",     # LTR mark
         "\u200f": "",     # RTL mark
@@ -2360,16 +2330,16 @@ def _ensure_static_nunito_fonts() -> tuple[Path, Path, Path]:
     if not (reg_font.exists() and bold_font.exists() and it_font.exists()):
         try:
             from fontTools.ttLib import TTFont
-            from fontTools.varLib.mutator import instantiateVariableFont
+            from fontTools.varLib.instancer import instantiateVariableFont
             var_ttf = fonts_dir / "Nunito.ttf"
             if var_ttf.exists():
                 if not reg_font.exists():
-                    instantiateVariableFont(TTFont(str(var_ttf)), {"wght": 400.0}).save(str(reg_font))
+                    instantiateVariableFont(TTFont(str(var_ttf)), {"wght": 400.0}, updateFontNames=True).save(str(reg_font))
                 if not bold_font.exists():
-                    instantiateVariableFont(TTFont(str(var_ttf)), {"wght": 700.0}).save(str(bold_font))
+                    instantiateVariableFont(TTFont(str(var_ttf)), {"wght": 700.0}, updateFontNames=True).save(str(bold_font))
             var_it = fonts_dir / "Nunito-Italic.ttf"
             if var_it.exists() and not it_font.exists():
-                instantiateVariableFont(TTFont(str(var_it)), {"wght": 400.0}).save(str(it_font))
+                instantiateVariableFont(TTFont(str(var_it)), {"wght": 400.0}, updateFontNames=True).save(str(it_font))
         except Exception:
             pass
 
@@ -2441,6 +2411,23 @@ def _register_pdf_fonts(pdf: FPDF, font_family: str) -> str:
     return "helvetica"
 
 
+def _draw_pdf_icon(pdf, svg, x: float, y: float, size: float, color: str, link: str = "") -> None:
+    """Embed the template's path geometry, without font glyphs or remote resources."""
+    paths = "".join(f'<path d="{_html.escape(path.get("d", ""), quote=True)}"/>'
+                    for path in svg.find_all("path"))
+    viewbox = _html.escape(svg.get("viewbox", "0 0 24 24"), quote=True)
+    data = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{viewbox}" fill="{color}">{paths}</svg>'
+    pdf.image(data.encode(), x=x, y=y, w=size, h=size, link=link)
+
+
+def pdf_uses_current_renderer(path: Path) -> bool:
+    from pypdf import PdfReader
+    try:
+        return PdfReader(path).metadata.get("/Creator") == PDF_RENDERER_VERSION
+    except Exception:
+        return False
+
+
 def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: bool = False) -> FPDF:
     """Build an exact single-page or multi-page styled resume PDF with template-specific styling.
 
@@ -2454,6 +2441,8 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     tid, info = resolve_template(template_attr)
 
     pdf = FPDF(format="A4", unit="mm")
+    pdf.set_display_mode("fullpage", layout="single")
+    pdf.set_creator(PDF_RENDERER_VERSION)
     if flow_pages:
         pdf.set_auto_page_break(auto=True, margin=12.0)
     else:
@@ -2477,7 +2466,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     # Proportional typography sizes scaled
     fs_name = 22.5 * scale_factor
     fs_title = 12.5 * scale_factor
-    fs_contact = 8.8 * scale_factor
+    fs_contact = 7.5 * scale_factor
     fs_h2 = 10.8 * scale_factor
     fs_body = 9.4 * scale_factor
     fs_bullet = 9.0 * scale_factor
@@ -2488,18 +2477,19 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     # 1. Header (Name & Subtitle)
     name_el = soup.find(class_="name")
     title_el = soup.find(class_="title")
-    name_text = _clean_text_for_pdf(name_el.get_text(strip=True) if name_el else "Alex Morgan")
-    title_text = _clean_text_for_pdf(title_el.get_text(strip=True) if title_el else "Software Engineer")
+    name_text = _clean_text_for_pdf(name_el.get_text(" ", strip=True) if name_el else "Alex Morgan")
+    title_text = _clean_text_for_pdf(title_el.get_text(" ", strip=True) if title_el else "Software Engineer")
 
     contact_div = soup.find(class_="contact")
     contact_items: list[tuple[str, str]] = []
+    contact_icons = {}
     if contact_div:
         # Search for individual items or plain text separated by symbols
         items_spans = contact_div.find_all(class_="item")
         if items_spans:
             for span in items_spans:
                 a_tag = span.find("a")
-                text = _clean_text_for_pdf(span.get_text(strip=True))
+                text = _clean_text_for_pdf(span.get_text(" ", strip=True))
                 href = a_tag["href"].strip() if a_tag and a_tag.get("href") else ""
                 if not href and "@" in text:
                     href = f"mailto:{text}"
@@ -2508,6 +2498,10 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     href = f"tel:{clean_num}"
                 if text:
                     contact_items.append((text, href))
+                    if tid == "apex_modern":
+                        icon = span.select_one(".ico svg")
+                        if icon:
+                            contact_icons[text] = icon
         else:
             raw_contact = _clean_text_for_pdf(contact_div.get_text(separator=" ", strip=True))
             for chunk in re.split(r"[•|;]+", raw_contact):
@@ -2515,6 +2509,50 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                 if chunk:
                     href = f"mailto:{chunk}" if "@" in chunk else ""
                     contact_items.append((chunk, href))
+
+    def write_contacts(*, centered: bool = False) -> None:
+        """Wrap whole contact items, including their link hitboxes, within the page."""
+        pdf.set_font(font_name, "", fs_contact)
+        rows: list[list[tuple[str, str, float]]] = [[]]
+        gap = 4.0 * scale_factor
+        icon_box = 3.2 * scale_factor
+        icon_gap = 1.0 * scale_factor
+        row_width = 0.0
+        for text, href in contact_items:
+            width = pdf.get_string_width(text) + 2 * pdf.c_margin
+            if text in contact_icons:
+                width += icon_box + icon_gap
+            if rows[-1] and row_width + gap + width > pdf.epw:
+                rows.append([])
+                row_width = 0.0
+            rows[-1].append((text, href, width))
+            row_width += width + (gap if len(rows[-1]) > 1 else 0)
+        for row in rows:
+            if not row:
+                continue
+            width = sum(item[2] for item in row) + gap * (len(row) - 1)
+            pdf.set_x(pdf.l_margin + max(0, (pdf.epw - width) / 2) if centered else pdf.l_margin)
+            row_gap = gap if centered or len(row) == 1 else (pdf.epw - sum(item[2] for item in row)) / (len(row) - 1)
+            for text, href, item_width in row:
+                if text in contact_icons:
+                    x, y = pdf.get_x(), pdf.get_y()
+                    box_y = y + (4.5 * scale_factor - icon_box) / 2
+                    pdf.set_draw_color(148, 163, 184)
+                    pdf.set_line_width(0.2)
+                    pdf.rect(x + pdf.c_margin, box_y, icon_box, icon_box)
+                    inset = 0.65 * scale_factor
+                    _draw_pdf_icon(pdf, contact_icons[text], x + pdf.c_margin + inset,
+                                   box_y + inset, icon_box - 2 * inset, "#475569", href)
+                    pdf.set_xy(x + icon_box + icon_gap, y)
+                    item_width -= icon_box + icon_gap
+                pdf.set_text_color(*(c_primary if href else c_muted))
+                if item_width > pdf.epw:
+                    pdf.multi_cell(0, 4.5 * scale_factor, text, link=href,
+                                   new_x="LMARGIN", new_y="NEXT")
+                else:
+                    pdf.cell(item_width, 4.5 * scale_factor, text, link=href)
+                    pdf.set_x(pdf.get_x() + row_gap)
+            pdf.ln(4.8 * scale_factor)
 
     # Render Header Layout according to template style
     if tid == "oxford_editorial":
@@ -2530,43 +2568,32 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
 
         # Centered contact row with bullets
         if contact_items:
-            pdf.set_font(font_name, "", fs_contact)
-            pdf.set_text_color(*c_muted)
-            contact_str = "   •   ".join(t for t, _ in contact_items)
-            pdf.cell(0, 4.5 * scale_factor, contact_str, align="C", new_x="LMARGIN", new_y="NEXT")
+            write_contacts(centered=True)
         pdf.ln(2.0 * scale_factor)
 
     elif tid == "monarch_executive":
-        # Distinguished Side-by-Side Executive Header
+        # Reserve independent columns so long names and links never overlap.
         start_y = pdf.get_y()
+        pdf.set_font(font_name, "", fs_contact)
+        contact_width = min(pdf.epw * 0.55, max((pdf.get_string_width(t) for t, _ in contact_items), default=0) + 2 * pdf.c_margin)
+        name_width = pdf.epw - contact_width - 6 if contact_items else pdf.epw
         pdf.set_font(font_name, "B", fs_name + 2.0)
         pdf.set_text_color(*c_dark)
-        pdf.write(7.0 * scale_factor, name_text)
-        pdf.ln(7.0 * scale_factor)
-
+        pdf.multi_cell(name_width, 8.5 * scale_factor, name_text, new_x="LMARGIN", new_y="NEXT")
         if title_text:
             pdf.set_font(font_name, "I", fs_title)
             pdf.set_text_color(*c_secondary)
-            pdf.write(5.0 * scale_factor, title_text)
-        
-        # Right-aligned contact items
-        if contact_items:
-            pdf.set_font(font_name, "", fs_contact)
-            pdf.set_text_color(*c_muted)
-            c_y = start_y
-            for t, href in contact_items:
-                _tw = pdf.get_string_width(t)
-                pdf.set_xy(pdf.w - pdf.r_margin - _tw, c_y)
-                if href:
-                    pdf.set_text_color(*c_secondary)
-                    pdf.write(3.8 * scale_factor, t, link=href)
-                else:
-                    pdf.set_text_color(*c_muted)
-                    pdf.write(3.8 * scale_factor, t)
-                c_y += 3.8 * scale_factor
-            pdf.set_y(max(pdf.get_y(), c_y) + 2.0 * scale_factor)
-        else:
-            pdf.ln(5.0 * scale_factor)
+            pdf.multi_cell(name_width, 5.0 * scale_factor, title_text, new_x="LMARGIN", new_y="NEXT")
+        left_bottom = pdf.get_y()
+        c_y = start_y
+        pdf.set_font(font_name, "", fs_contact)
+        for text, href in contact_items:
+            pdf.set_xy(pdf.w - pdf.r_margin - contact_width, c_y)
+            pdf.set_text_color(*(c_secondary if href else c_muted))
+            pdf.multi_cell(contact_width, 4.0 * scale_factor, text, align="R", link=href,
+                           new_x="LMARGIN", new_y="NEXT")
+            c_y = pdf.get_y()
+        pdf.set_y(max(left_bottom, c_y) + 2.0 * scale_factor)
 
         # Executive divider line
         pdf.set_draw_color(*c_primary)
@@ -2590,18 +2617,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
             pdf.ln(6.5 * scale_factor)
 
         if contact_items:
-            pdf.set_font(font_name, "", fs_contact)
-            for i, (text, href) in enumerate(contact_items):
-                if i > 0:
-                    pdf.set_text_color(203, 213, 225)
-                    pdf.write(4.2 * scale_factor, "  |  ")
-                if href:
-                    pdf.set_text_color(*c_primary)
-                    pdf.write(4.2 * scale_factor, text, link=href)
-                else:
-                    pdf.set_text_color(*c_muted)
-                    pdf.write(4.2 * scale_factor, text)
-            pdf.ln(4.5 * scale_factor)
+            write_contacts()
 
         # Emerald Divider
         pdf.set_draw_color(*c_primary)
@@ -2621,42 +2637,11 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
         pdf.ln(7.5 * scale_factor)
 
         if contact_items:
-            pdf.set_font(font_name, "", fs_contact)
-            total_items_w = sum(pdf.get_string_width(t) for t, _ in contact_items)
-            n_items = len(contact_items)
-            avail_w = pdf.w - pdf.l_margin - pdf.r_margin
-            gap = (avail_w - total_items_w) / (n_items - 1) if n_items > 1 else 0
-
-            if gap >= 2.0:
-                cur_x = pdf.l_margin
-                pdf_y = pdf.get_y()
-                for text, href in contact_items:
-                    w = pdf.get_string_width(text)
-                    pdf.set_xy(cur_x, pdf_y)
-                    if href:
-                        pdf.set_text_color(*c_primary)
-                        pdf.write(4.5 * scale_factor, text, link=href)
-                    else:
-                        pdf.set_text_color(*c_muted)
-                        pdf.write(4.5 * scale_factor, text)
-                    cur_x += w + gap
-                pdf.ln(5.0 * scale_factor)
-            else:
-                for i, (text, href) in enumerate(contact_items):
-                    if i > 0:
-                        pdf.set_text_color(148, 163, 184)
-                        pdf.write(4.5 * scale_factor, "   •   ")
-                    if href:
-                        pdf.set_text_color(*c_primary)
-                        pdf.write(4.5 * scale_factor, text, link=href)
-                    else:
-                        pdf.set_text_color(*c_muted)
-                        pdf.write(4.5 * scale_factor, text)
-                pdf.ln(5.0 * scale_factor)
+            write_contacts()
 
     # 3. Resume Sections
     for h2 in soup.find_all("h2"):
-        sec_title = _clean_text_for_pdf(h2.get_text(strip=True)).upper()
+        sec_title = _clean_text_for_pdf(h2.get_text(" ", strip=True)).upper()
         pdf.ln(1.8 * scale_factor)
         pdf.set_font(font_name, "B", fs_h2)
         pdf.set_text_color(*c_primary)
@@ -2671,7 +2656,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
         curr = h2.next_sibling
         while curr and curr.name != "h2":
             if curr.name == "p":
-                p_text = _clean_text_for_pdf(curr.get_text(strip=True))
+                p_text = _clean_text_for_pdf(curr.get_text(" ", strip=True))
                 if p_text:
                     pdf.set_font(font_name, "", fs_body)
                     pdf.set_text_color(*c_body)
@@ -2688,22 +2673,22 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     strong_el = left.find("strong")
                     em_el = left.find("em")
                     if strong_el and em_el:
-                        left_title = _clean_text_for_pdf(strong_el.get_text(strip=True).rstrip(","))
-                        left_subtitle = _clean_text_for_pdf(em_el.get_text(strip=True).lstrip(", "))
+                        left_title = _clean_text_for_pdf(strong_el.get_text(" ", strip=True).rstrip(","))
+                        left_subtitle = _clean_text_for_pdf(em_el.get_text(" ", strip=True).lstrip(", "))
                     elif strong_el:
-                        left_title = _clean_text_for_pdf(strong_el.get_text(strip=True))
+                        left_title = _clean_text_for_pdf(strong_el.get_text(" ", strip=True))
                     elif em_el:
-                        left_subtitle = _clean_text_for_pdf(em_el.get_text(strip=True))
+                        left_subtitle = _clean_text_for_pdf(em_el.get_text(" ", strip=True))
                     else:
                         clean_left = re.sub(r"\s*,\s*", ", ", left.get_text(separator=" ", strip=True))
                         left_title = _clean_text_for_pdf(clean_left)
                 else:
                     r_title = curr.find(class_="role-title")
                     r_comp = curr.find(class_="role-comp")
-                    left_title = _clean_text_for_pdf(r_title.get_text(strip=True) if r_title else "")
-                    left_subtitle = _clean_text_for_pdf(r_comp.get_text(strip=True) if r_comp else "")
+                    left_title = _clean_text_for_pdf(r_title.get_text(" ", strip=True) if r_title else "")
+                    left_subtitle = _clean_text_for_pdf(r_comp.get_text(" ", strip=True) if r_comp else "")
 
-                right_s = _clean_text_for_pdf(right.get_text(strip=True) if right else "")
+                right_s = _clean_text_for_pdf(right.get_text(" ", strip=True) if right else "")
 
                 if left_title:
                     pdf.set_font(font_name, "B", fs_body + 0.2)
@@ -2730,7 +2715,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     pdf.ln(4.3 * scale_factor)
 
                 for li in curr.find_all("li"):
-                    li_text = _clean_text_for_pdf(li.get_text(strip=True))
+                    li_text = _clean_text_for_pdf(li.get_text(" ", strip=True))
                     if li_text:
                         pdf.set_font(font_name, "", fs_bullet)
                         pdf.set_text_color(*c_body)
@@ -2746,11 +2731,15 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                 a_el = head_div.find("a", href=True) if head_div else None
                 em_el = head_div.find("em") if head_div else None
 
-                p_name = _clean_text_for_pdf(strong_el.get_text(strip=True) if strong_el else "")
+                p_name = _clean_text_for_pdf(strong_el.get_text(" ", strip=True) if strong_el else "")
                 link_url = a_el["href"].strip() if a_el and a_el.get("href") else ""
-                sub_text = _clean_text_for_pdf(em_el.get_text(strip=True) if em_el else "")
+                sub_text = _clean_text_for_pdf(em_el.get_text(" ", strip=True) if em_el else "")
                 clean_sub = sub_text.lstrip(", -—").strip()
 
+                # Inline fragments share one cursor; cell padding would separate commas/icons.
+                cell_margin = pdf.c_margin
+                pdf.set_x(pdf.get_x() + cell_margin)
+                pdf.c_margin = 0
                 pdf.set_font(font_name, "B", fs_body + 0.3)
                 if link_url:
                     pdf.set_text_color(*c_primary)
@@ -2759,14 +2748,25 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     pdf.set_text_color(*c_dark)
                     pdf.write(4.3 * scale_factor, p_name)
 
+                icon = head_div.find("svg") if head_div else None
+                if icon:
+                    size = 2.0 * scale_factor
+                    if pdf.get_x() + size + 1 > pdf.w - pdf.r_margin:
+                        pdf.ln(4.3 * scale_factor)
+                    _draw_pdf_icon(pdf, icon, pdf.get_x() + 0.7 * scale_factor,
+                                   pdf.get_y() + 1.15 * scale_factor, size,
+                                   info.get("primary_color", "#137f96"), link_url)
+                    pdf.set_x(pdf.get_x() + size + 0.7 * scale_factor)
+
                 if clean_sub:
                     pdf.set_font(font_name, "I", fs_body - 0.4)
                     pdf.set_text_color(*c_muted)
                     pdf.write(4.3 * scale_factor, f", {clean_sub}")
                 pdf.ln(4.3 * scale_factor)
+                pdf.c_margin = cell_margin
 
                 for li in curr.find_all("li"):
-                    li_text = _clean_text_for_pdf(li.get_text(strip=True))
+                    li_text = _clean_text_for_pdf(li.get_text(" ", strip=True))
                     if li_text:
                         pdf.set_font(font_name, "", fs_bullet)
                         pdf.set_text_color(*c_body)
@@ -2782,8 +2782,8 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     if is_skills:
                         strong_tag = li.find("strong")
                         if strong_tag:
-                            cat_text = _clean_text_for_pdf(strong_tag.get_text(strip=True))
-                            full_li = _clean_text_for_pdf(li.get_text(strip=True))
+                            cat_text = _clean_text_for_pdf(strong_tag.get_text(" ", strip=True))
+                            full_li = _clean_text_for_pdf(li.get_text(" ", strip=True))
                             rest = full_li[len(cat_text):].lstrip(" :—–-")
 
                             pdf.set_x(margin_x + 1)
@@ -2799,13 +2799,13 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                             pdf.set_text_color(*c_body)
                             pdf.write(lh_bullet, f" — {rest}\n")
                         else:
-                            li_text = _clean_text_for_pdf(li.get_text(strip=True))
+                            li_text = _clean_text_for_pdf(li.get_text(" ", strip=True))
                             pdf.set_x(margin_x + 1)
                             pdf.set_font(font_name, "", fs_bullet)
                             pdf.set_text_color(*c_body)
                             pdf.write(lh_bullet, f"•  {li_text}\n")
                     else:
-                        li_text = _clean_text_for_pdf(li.get_text(strip=True))
+                        li_text = _clean_text_for_pdf(li.get_text(" ", strip=True))
                         if li_text:
                             pdf.set_font(font_name, "", fs_bullet)
                             pdf.set_text_color(*c_body)
@@ -2832,8 +2832,8 @@ class PageOverflowError(ValueError):
     """
 
 
-# Readability floor: body font never goes below 9.0pt (scale 1.0; 0.98 for tight fit).
-_PDF_MIN_SCALE = 0.98
+# Readability floor: the smallest body/bullet text stays at least 9pt.
+_PDF_MIN_SCALE = 1.0
 # Bottom of the usable area on A4 (297mm tall); content past this would clip.
 _PDF_MAX_Y_MM = 278.0
 
@@ -2855,7 +2855,7 @@ def _render_pdf_fallback(html_p: Path, pdf_p: Path, page_target: int | None = No
     """Pure-Python PDF generator with auto-fitted / target page handling.
 
     Tries to fit on 1 page first by testing scale factors from spacious (1.20)
-    down to the 9pt floor (0.98/1.0). If content is short, it uses a larger font/spacing
+    down to the 9pt floor (1.0). If content is short, it uses a larger font/spacing
     to fill the page. If content is long, it scales down to 9pt to fit on 1 page.
     If the content cannot fit on 1 page even at 9pt, it flows onto 2 pages.
     Raises PageOverflowError when the content cannot fit the requested/maximum pages.
@@ -2869,9 +2869,9 @@ def _render_pdf_fallback(html_p: Path, pdf_p: Path, page_target: int | None = No
     soup = BeautifulSoup(html_text, "html.parser")
 
     if page_target != 2:
-        # 1-page attempt: dynamically scale from 1.28 down to the 9pt minimum floor (0.98).
+        # 1-page attempt: dynamically scale from 1.28 down to the 9pt minimum floor (1.0).
         # We test largest to smallest so the first one that fits gives the best page-filling size.
-        for sf in (1.28, 1.22, 1.16, 1.10, 1.05, 1.00, _PDF_MIN_SCALE):
+        for sf in (1.28, 1.24, 1.20, 1.16, 1.12, 1.08, 1.04, _PDF_MIN_SCALE):
             pdf_attempt = _build_pdf_page(soup, scale_factor=sf)
             if pdf_attempt.page_no() == 1 and pdf_attempt.get_y() <= _PDF_MAX_Y_MM:
                 pdf_attempt.output(str(pdf_p))
@@ -2882,7 +2882,7 @@ def _render_pdf_fallback(html_p: Path, pdf_p: Path, page_target: int | None = No
                 "Switch to 2-page format or trim lower-priority content."
             )
     # 2 pages attempt: flow naturally onto 2 pages at comfortable font size
-    for sf in (1.10, 1.05, 1.00, _PDF_MIN_SCALE):
+    for sf in (1.10, 1.05, _PDF_MIN_SCALE):
         pdf_attempt = _build_pdf_page(soup, scale_factor=sf, flow_pages=True)
         if pdf_attempt.page_no() <= 2:
             pdf_attempt.output(str(pdf_p))

@@ -292,6 +292,33 @@ def sync_from_supabase_to_memory(session: Session) -> None:
         except Exception as ver_exc:
             logger.debug(f"Cloud resume versions sync note: {ver_exc}")
 
+        # 6. Hydrate Email Activities from Supabase Cloud
+        try:
+            cloud_activities = sb.fetch_all_email_activities(limit=200)
+            for act in cloud_activities:
+                act_id = act.get("id")
+                if not act_id:
+                    continue
+                existing_act = session.get(EmailActivity, int(act_id))
+                if not existing_act:
+                    new_act = EmailActivity(
+                        id=int(act_id),
+                        user_id=int(act.get("user_id") or 0),
+                        application_id=int(act.get("application_id")) if act.get("application_id") else None,
+                        event_type=act.get("event_type") or "sent",
+                        recipient=act.get("recipient") or "",
+                        subject=act.get("subject") or "",
+                        details_json=act.get("details_json") or "{}",
+                        created_at=_parse_dt(act.get("created_at")) or dt.datetime.now(dt.timezone.utc),
+                    )
+                    session.add(new_act)
+        except Exception as act_exc:
+            logger.debug(f"Cloud email activities sync note: {act_exc}")
+
+        session.commit()
+    except Exception as exc:
+        logger.warning(f"Supabase hydration warning: {exc}")
+    finally:
         # 5. Disk Resume Version Hydration (Ensures versions persist across in-memory DB restarts)
         try:
             import re
@@ -359,39 +386,20 @@ def sync_from_supabase_to_memory(session: Session) -> None:
                                 updated_at=app_row.updated_at or dt.datetime.now(dt.timezone.utc),
                             )
                             session.add(v1_row)
+            session.commit()
         except Exception as disk_exc:
             logger.debug(f"Disk resume version hydration note: {disk_exc}")
 
-        # 6. Hydrate Email Activities from Supabase Cloud
-        try:
-            cloud_activities = sb.fetch_all_email_activities(limit=200)
-            for act in cloud_activities:
-                act_id = act.get("id")
-                if not act_id:
-                    continue
-                existing_act = session.get(EmailActivity, int(act_id))
-                if not existing_act:
-                    new_act = EmailActivity(
-                        id=int(act_id),
-                        user_id=int(act.get("user_id") or 0),
-                        application_id=int(act.get("application_id")) if act.get("application_id") else None,
-                        event_type=act.get("event_type") or "sent",
-                        recipient=act.get("recipient") or "",
-                        subject=act.get("subject") or "",
-                        details_json=act.get("details_json") or "{}",
-                        created_at=_parse_dt(act.get("created_at")) or dt.datetime.now(dt.timezone.utc),
-                    )
-                    session.add(new_act)
-        except Exception as act_exc:
-            logger.debug(f"Cloud email activities sync note: {act_exc}")
-
-        session.commit()
-    except Exception as exc:
-        logger.warning(f"Supabase hydration warning: {exc}")
 
 
 def seed_admin_user() -> None:
-    """Ensure the system administrator exists and is seeded with candidate knowledge base in Supabase."""
+    """Bootstrap the offline administrator; configured cloud profiles are authoritative."""
+    from radar.supabase_client import SupabaseClient
+
+    # Even if hydration fails, never replace a cloud account with local defaults.
+    if SupabaseClient().is_configured:
+        return
+
     from app.auth import encrypt_credential, hash_password
     from app.knowledge import load_candidate
 
@@ -441,27 +449,6 @@ def seed_admin_user() -> None:
                 session.add(admin_user)
                 session.commit()
 
-                # Also sync to Supabase cloud directly
-                try:
-                    from radar.supabase_client import SupabaseClient
-                    sb = SupabaseClient()
-                    if sb.is_configured:
-                        sb.upsert_user({
-                            "email": admin_user.email,
-                            "password_hash": admin_user.password_hash,
-                            "name": admin_user.name,
-                            "is_active": admin_user.is_active,
-                            "smtp_host": admin_user.smtp_host,
-                            "smtp_port": admin_user.smtp_port,
-                            "smtp_username": admin_user.smtp_username,
-                            "smtp_password_encrypted": admin_user.smtp_password_encrypted,
-                            "sender_name": admin_user.sender_name,
-                            "smtp_verified": admin_user.smtp_verified,
-                            "knowledge_base_json": admin_user.knowledge_base_json,
-                            "selected_template_id": admin_user.selected_template_id,
-                        })
-                except Exception:
-                    pass
             else:
                 # If admin exists but has completely empty KB and no KB in cloud, seed with default
                 if not admin_user.knowledge_base_json or admin_user.knowledge_base_json.strip() in ("", "{}"):
@@ -495,7 +482,7 @@ def seed_admin_user() -> None:
 def init_db() -> None:
     """Create in-memory schema, hydrate live data from Supabase, and ensure admin exists."""
     Base.metadata.create_all(_engine)
-    if not config.TEST_MODE and "pytest" not in sys.modules:
+    if "pytest" not in sys.modules:
         with get_session() as s:
             sync_from_supabase_to_memory(s)
     seed_admin_user()

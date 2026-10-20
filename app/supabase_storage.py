@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
+from urllib.parse import quote
 import httpx
 
 from app import config
@@ -22,6 +23,28 @@ def is_storage_configured() -> bool:
     """Check if Supabase Storage is configured."""
     url, key, bucket = _get_env_vars()
     return bool(url and key and bucket)
+
+
+def download_resume_from_supabase(filename: str, timeout_s: float = 15.0) -> bytes | None:
+    """Recover the exact stored PDF after a local/serverless cache is lost."""
+    if not is_storage_configured():
+        return None
+    # Only object names produced by our uploader; never fetch a caller-supplied URL.
+    if Path(filename).name != filename or not filename.lower().endswith(".pdf"):
+        return None
+    url, key, bucket = _get_env_vars()
+    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+    try:
+        with httpx.Client(timeout=timeout_s) as client:
+            response = client.get(
+                f"{url}/storage/v1/object/{quote(bucket, safe='')}/{quote(filename, safe='')}",
+                headers=headers,
+            )
+            if response.status_code == 200 and response.content.startswith(b"%PDF-"):
+                return response.content
+    except httpx.HTTPError:
+        logger.warning("Stored resume download failed: %s", filename)
+    return None
 
 
 def upload_resume_to_supabase(

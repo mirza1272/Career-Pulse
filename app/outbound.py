@@ -200,9 +200,6 @@ class OutboundEmailGuard:
             tracking_token=tracking_token,
         )
 
-        # Refresh config dynamically from .env
-        config.reload_config()
-
         # =====================================================================
         # ROUTE A: DIRECT GMAIL OAUTH INTEGRATION (WHEN CONNECTED)
         # =====================================================================

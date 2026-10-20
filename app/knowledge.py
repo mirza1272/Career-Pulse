@@ -16,8 +16,6 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from app import config
-
 if TYPE_CHECKING:
     from app.models import User
 
@@ -298,8 +296,6 @@ def load_candidate_for_user(user: User | None) -> Candidate:
     if not user:
         return _cached_candidate()
 
-    is_admin = bool(user.email and user.email.strip().lower() == config.ADMIN_EMAIL.strip().lower())
-
     if user.knowledge_base_json and user.knowledge_base_json.strip() not in ("", "{}"):
         try:
             data = json.loads(user.knowledge_base_json)
@@ -371,25 +367,7 @@ def load_candidate_for_user(user: User | None) -> Candidate:
         except Exception as exc:
             print(f"[Knowledge Notice] Failed parsing knowledge_base_json for user {user.id}: {exc}")
 
-    # Fallback when knowledge_base_json is empty:
-    # Only the administrator gets initial baseline bootstrap from profile.yaml
-    if is_admin:
-        base = _cached_candidate()
-        return Candidate(
-            name=user.name or base.name or "Haseeb Ur Rahman",
-            email=user.email or base.email,
-            phone=base.phone,
-            location=base.location,
-            summary=base.summary,
-            links=base.links,
-            skills=list(base.skills),
-            projects=list(base.projects),
-            experience=list(base.experience),
-            education=list(base.education),
-            certifications=list(base.certifications),
-        )
-
-    # For non-admin user with no KB saved yet, return a clean empty profile under their own identity
+    # Empty user profiles stay empty; offline bootstrap happens explicitly in db.py.
     return Candidate(
         name=user.name or (user.email.split("@")[0] if user.email else "Applicant"),
         email=user.email or "",

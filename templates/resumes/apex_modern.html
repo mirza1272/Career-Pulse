@@ -11,12 +11,12 @@
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <style>
   @font-face {
-    font-family: 'Nunito'; font-style: normal; font-weight: 200 900;
-    src: url('{{FONT_DIR}}/Nunito.ttf') format('truetype');
+    font-family: 'Nunito'; font-style: normal; font-weight: 400;
+    src: url('{{FONT_DIR}}/Nunito-Regular.ttf') format('truetype');
   }
   @font-face {
-    font-family: 'Nunito'; font-style: italic; font-weight: 200 900;
-    src: url('{{FONT_DIR}}/Nunito-Italic.ttf') format('truetype');
+    font-family: 'Nunito'; font-style: italic; font-weight: 400;
+    src: url('{{FONT_DIR}}/Nunito-Italic-Static.ttf') format('truetype');
   }
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -113,6 +113,22 @@
   .proj ul { margin-top: 1.5px; }
   a.ext-link { text-decoration: none; color: inherit; }
   svg.link-icon { width: 9px; height: 9px; fill: #137f96; margin-left: 2px; display: inline-block; vertical-align: middle; }
+
+  /* Contact labels move as a unit; small screens reflow without clipping. */
+  .contact { flex-wrap: wrap; gap: 5px 12px; }
+  .contact .item { flex: 0 0 auto; white-space: nowrap; }
+  .contact .ico { flex-shrink: 0; }
+  @media screen and (max-width: 650px) {
+    html { padding: 0; }
+    body { width: 100%; min-height: auto; padding: 20px 18px; box-shadow: none; }
+    .header, .name-row { flex-wrap: wrap; gap: 10px; }
+    .header-left { flex-basis: 100%; }
+    .name { font-size: 24px; }
+    .title { display: block; margin-left: 0; }
+    .contact { text-align: left; align-items: flex-start; }
+    .entry { flex-wrap: wrap; gap: 3px 10px; }
+    .entry .right { padding-left: 0; white-space: normal; }
+  }
 </style>
 </head>
 <body data-template="apex_modern">
