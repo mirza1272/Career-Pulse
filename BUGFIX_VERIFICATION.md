@@ -50,3 +50,13 @@ Knowledge-base skills and startup sync correction:
 - Latest related regression run: **87 passed**, including PDF output, hostile skill suggestions, empty KB, startup failure, user isolation, readiness, custom focus, imports and resume delivery. The earlier 131-test run predates this follow-up.
 - Audited the updated local startup: five Supabase GET requests and zero cloud writes. Chromium at 1440px and 390px confirmed local displayed experiences/skills equal the current cloud record, with no JavaScript errors.
 - No cloud profile restoration or schema changes were performed; no live email was sent.
+
+Knowledge-base Save confirmation correction:
+
+- Email test mode no longer suppresses user/profile synchronization. No mock-type or email-domain exception bypasses the production save path.
+- Cloud success requires a returned record matching the user ID and submitted KB. A failed or mismatched response is not reported as success.
+- KB Save synchronizes before committing the working copy and updates the profile timestamp. Failure rolls back the working copy and renders HTTP 503 with submitted form values preserved for retry.
+- When cloud configuration is missing, serverless saves fail visibly; offline local sessions receive an explicit temporary-session notice.
+- Verification: **99 passed** in a copy without live credentials, including new cloud acknowledgement, failure, retry, test-mode, timestamp, missing-config and cache-loss checks plus existing resume, isolation and readiness regressions.
+- Chromium desktop and 390px mobile: failed Save kept the typed profile/skills; retry succeeded; refresh retained the saved skill; no JavaScript errors.
+- Browser writes targeted only an isolated local fixture backed by an in-memory cloud stub. No live Supabase writes or email dispatches were made.

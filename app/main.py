@@ -369,21 +369,16 @@ def bg_sync_app(app_data: dict[str, Any]) -> None:
             logger.warning(f"Background Supabase app sync warning: {exc}")
 
 
-def sync_user_to_supabase(user: User) -> None:
-    """Helper to push a user record into Supabase PostgREST cloud."""
+def sync_user_to_supabase(user: User) -> bool | None:
+    """Return True for an acknowledged save, False on failure, None when unconfigured."""
     if not user or not user.email:
-        return
+        return False
     if get_supabase_client:
         try:
             sb = get_supabase_client()
             if sb and getattr(sb, "is_configured", False):
-                is_mock = type(sb).__name__ in ("MagicMock", "Mock", "NonCallableMagicMock")
-                if not is_mock and (
-                    user.email.endswith(("@test.org", "@example.test", "@example.com", "@acme.test", "@company.com", "@innovate.io"))
-                    or config.TEST_MODE
-                ):
-                    return
-                sb.upsert_user(
+                # Email test mode must not disable account/profile persistence.
+                saved_user = sb.upsert_user(
                     {
                         "id": user.id,
                         "email": user.email,
@@ -409,8 +404,14 @@ def sync_user_to_supabase(user: User) -> None:
                         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
                     }
                 )
+                return bool(
+                    saved_user and saved_user.get("id") == user.id
+                    and saved_user.get("knowledge_base_json") == user.knowledge_base_json
+                )
         except Exception as err:
             logger.warning(f"Supabase user sync warning: {err}")
+            return False
+    return None
 
 
 class ApplicationIn(BaseModel):
@@ -1274,7 +1275,7 @@ def create_app() -> FastAPI:
                 "title": "Career Pulse — Knowledge Base Profile",
                 "current_user": user,
                 "kb_data": kb_data,
-                "saved": bool(saved),
+                "saved": saved,
                 "readiness": _readiness_ctx(user),
             },
         )
@@ -1296,7 +1297,7 @@ def create_app() -> FastAPI:
         projects_json: str = Form("[]"),
         education_json: str = Form("[]"),
         certifications_json: str = Form("[]"),
-    ) -> RedirectResponse:
+    ) -> Response:
         user = getattr(request.state, "current_user", None)
         if not user:
             return RedirectResponse("/login", status_code=303)
@@ -1371,13 +1372,27 @@ def create_app() -> FastAPI:
 
         with get_session() as s:
             u = s.get(User, user.id)
-            if u:
-                u.name = payload["name"]
-                u.knowledge_base_json = json.dumps(payload, ensure_ascii=False)
-                s.commit()
-                sync_user_to_supabase(u)
+            if not u:
+                raise HTTPException(status_code=404, detail="Account not found.")
+            u.name = payload["name"]
+            u.knowledge_base_json = json.dumps(payload, ensure_ascii=False)
+            u.updated_at = dt.datetime.now(dt.timezone.utc)
+            synced = sync_user_to_supabase(u)
+            if synced is False or (synced is None and config.is_serverless):
+                s.rollback()
+                return templates.TemplateResponse(
+                    request=request, name="knowledge_base.html",
+                    context={
+                        "title": "Career Pulse — Knowledge Base Profile",
+                        "current_user": user, "kb_data": payload, "saved": False,
+                        "readiness": _readiness_ctx(user),
+                        "save_error": "Your profile could not be saved to Supabase. Your changes are still in this form. Keep this page open and retry Save.",
+                    },
+                    status_code=503,
+                )
+            s.commit()
 
-        return RedirectResponse("/knowledge-base?saved=1", status_code=303)
+        return RedirectResponse(f"/knowledge-base?saved={'1' if synced else 'local'}", status_code=303)
 
     @app.post("/knowledge-base/import")
     async def knowledge_base_import(

@@ -70,14 +70,24 @@
     </div>
   </div>
 
-  {% if saved %}
+  {% if save_error %}
+  <div role="alert" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; color:#f87171;">
+    {{ save_error }}
+  </div>
+  {% endif %}
+
+  {% if saved == 'local' %}
+  <div role="status" style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; color:#fbbf24;">
+    Saved for this local session only. Supabase is not connected; these changes will be lost when the app restarts.
+  </div>
+  {% elif saved %}
   <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:10px; padding:14px 18px; margin-bottom:24px; display:flex; gap:12px; align-items:center;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
       <polyline points="22 4 12 14.01 9 11.01"></polyline>
     </svg>
     <div style="font-size:14px; font-weight:500; color:#34d399;">
-      Knowledge base profile updated successfully. Future applications will reflect your latest data.
+      Knowledge base profile saved to Supabase successfully. Future applications will reflect your latest data.
     </div>
   </div>
   {% endif %}
