@@ -60,3 +60,10 @@ Knowledge-base Save confirmation correction:
 - Verification: **99 passed** in a copy without live credentials, including new cloud acknowledgement, failure, retry, test-mode, timestamp, missing-config and cache-loss checks plus existing resume, isolation and readiness regressions.
 - Chromium desktop and 390px mobile: failed Save kept the typed profile/skills; retry succeeded; refresh retained the saved skill; no JavaScript errors.
 - Browser writes targeted only an isolated local fixture backed by an in-memory cloud stub. No live Supabase writes or email dispatches were made.
+
+Sent dashboard Gmail import correction:
+
+- Reproduced the reported 500 for Gmail-connected accounts: both `/sent` and `/api/gmail/sync-activity` raised `NameError: name 'gmail' is not defined`.
+- Imported the existing Gmail service at module scope so both route handlers resolve it. No service behavior, schema, credentials or user data were changed.
+- Added route regressions for Gmail-connected/SMTP accounts, tenant isolation, unauthenticated access and activity sync.
+- Verification: **60 passed** in a credential-free copy across Sent, Gmail OAuth/activity, follow-up policy, KB Save, cloud payload fidelity and resume delivery. No live Gmail or Supabase writes were performed.

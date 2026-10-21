@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 import sys
-from app import config
+from app import config, gmail
 from app.auth import (
     authenticate_user,
     change_user_password,
