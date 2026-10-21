@@ -67,3 +67,12 @@ Sent dashboard Gmail import correction:
 - Imported the existing Gmail service at module scope so both route handlers resolve it. No service behavior, schema, credentials or user data were changed.
 - Added route regressions for Gmail-connected/SMTP accounts, tenant isolation, unauthenticated access and activity sync.
 - Verification: **60 passed** in a credential-free copy across Sent, Gmail OAuth/activity, follow-up policy, KB Save, cloud payload fidelity and resume delivery. No live Gmail or Supabase writes were performed.
+
+Automatic PDF page balancing:
+
+- All four A4 layout margins use a 10mm inset. A measured binary search chooses a readable font size, then opens line/section spacing within a 30% cap to use spare page height.
+- The 9pt bullet/body floor and existing page limits remain enforced. Very short profiles keep natural whitespace rather than oversized type or excessively stretched lines.
+- Updated renderer revision refreshes existing unsent generated PDFs through the shared delivery resolver. Original sent/uploaded PDF preservation remains covered by regression tests.
+- Verification: **90 passed** across all eight templates, moderate/dense/sparse content, multi-page flow, clipping/page-limit checks, PDF text preservation, metadata, icons/links and preview/download/email byte identity.
+- Visually inspected a saved resume export; measured bottom whitespace decreased from about 31.7mm to 11.9mm. Preview is stored locally as data/resumes/resume-balanced-fit-preview.pdf and is excluded from Git.
+- Verification ran without live credentials. No Supabase profile writes or live emails were performed.

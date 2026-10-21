@@ -356,7 +356,7 @@ is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNC
 RESUMES_OUTPUT_DIR = Path("/tmp/resumes") if is_serverless else (ROOT / "data/resumes")
 
 FONT_DIR_TOKEN = "{{FONT_DIR}}"
-PDF_RENDERER_VERSION = "Career Pulse PDF 2026-10-21.2"
+PDF_RENDERER_VERSION = "Career Pulse PDF 2026-10-21.3"
 _REGION_RE = re.compile(
     r"<!--REGION:([A-Za-z0-9_]+)-->(.*?)<!--END:\1-->",
     re.DOTALL,
@@ -2428,7 +2428,7 @@ def pdf_uses_current_renderer(path: Path) -> bool:
         return False
 
 
-def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: bool = False) -> FPDF:
+def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: bool = False, spacing_factor: float = 1.0) -> FPDF:
     """Build an exact single-page or multi-page styled resume PDF with template-specific styling.
 
     flow_pages=True enables fpdf2 auto page-break so long resumes flow onto page 2 cleanly.
@@ -2443,17 +2443,13 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     pdf = FPDF(format="A4", unit="mm")
     pdf.set_display_mode("fullpage", layout="single")
     pdf.set_creator(PDF_RENDERER_VERSION)
-    if flow_pages:
-        pdf.set_auto_page_break(auto=True, margin=12.0)
-    else:
-        pdf.set_auto_page_break(auto=False)
+    pdf.set_auto_page_break(auto=flow_pages, margin=_PDF_MARGIN_MM)
 
     font_family_pref = info.get("font_family", "Nunito")
     font_name = _register_pdf_fonts(pdf, font_family_pref)
 
-    margin_x = 10.0
-    margin_top = max(6.0, 7.5 * scale_factor)
-    pdf.set_margins(margin_x, margin_top, margin_x)
+    margin_x = _PDF_MARGIN_MM
+    pdf.set_margins(margin_x, _PDF_MARGIN_MM, margin_x)
     pdf.add_page()
 
     # Template-specific color palette
@@ -2471,8 +2467,9 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     fs_body = 9.4 * scale_factor
     fs_bullet = 9.0 * scale_factor
 
-    lh_body = 4.35 * scale_factor
-    lh_bullet = 4.05 * scale_factor
+    line_scale = scale_factor * spacing_factor
+    lh_body = 4.35 * line_scale
+    lh_bullet = 4.05 * line_scale
 
     # 1. Header (Name & Subtitle)
     name_el = soup.find(class_="name")
@@ -2642,16 +2639,16 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
     # 3. Resume Sections
     for h2 in soup.find_all("h2"):
         sec_title = _clean_text_for_pdf(h2.get_text(" ", strip=True)).upper()
-        pdf.ln(1.8 * scale_factor)
+        pdf.ln(1.8 * line_scale)
         pdf.set_font(font_name, "B", fs_h2)
         pdf.set_text_color(*c_primary)
-        pdf.cell(0, 4.8 * scale_factor, sec_title, new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 4.8 * line_scale, sec_title, new_x="LMARGIN", new_y="NEXT")
 
         # Section divider line
         pdf.set_draw_color(*c_primary)
         pdf.set_line_width(0.32)
         pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-        pdf.ln(1.6 * scale_factor)
+        pdf.ln(1.6 * line_scale)
 
         curr = h2.next_sibling
         while curr and curr.name != "h2":
@@ -2661,7 +2658,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     pdf.set_font(font_name, "", fs_body)
                     pdf.set_text_color(*c_body)
                     pdf.multi_cell(0, lh_body, p_text, new_x="LMARGIN", new_y="NEXT")
-                    pdf.ln(0.8 * scale_factor)
+                    pdf.ln(0.8 * line_scale)
 
             elif curr.name == "div" and ("entry" in curr.get("class", []) or "role" in curr.get("class", [])):
                 left = curr.find(class_="left")
@@ -2693,12 +2690,12 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                 if left_title:
                     pdf.set_font(font_name, "B", fs_body + 0.2)
                     pdf.set_text_color(*c_dark)
-                    pdf.write(4.3 * scale_factor, left_title)
+                    pdf.write(4.3 * line_scale, left_title)
                 if left_subtitle:
                     pdf.set_font(font_name, "I", fs_body - 0.2)
                     pdf.set_text_color(*c_muted)
                     prefix = ", " if left_title else ""
-                    pdf.write(4.3 * scale_factor, f"{prefix}{left_subtitle}")
+                    pdf.write(4.3 * line_scale, f"{prefix}{left_subtitle}")
 
                 if right_s:
                     pdf.set_font(font_name, "I", fs_body - 0.3)
@@ -2707,12 +2704,12 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                     _avail = pdf.w - pdf.r_margin - pdf.get_x()
                     if _rw + 2.0 <= _avail:
                         pdf.set_x(pdf.w - pdf.r_margin - _rw)
-                        pdf.cell(_rw, 4.3 * scale_factor, right_s, new_x="LMARGIN", new_y="NEXT")
+                        pdf.cell(_rw, 4.3 * line_scale, right_s, new_x="LMARGIN", new_y="NEXT")
                     else:
-                        pdf.ln(4.3 * scale_factor)
-                        pdf.cell(0, 4.3 * scale_factor, right_s, align="R", new_x="LMARGIN", new_y="NEXT")
+                        pdf.ln(4.3 * line_scale)
+                        pdf.cell(0, 4.3 * line_scale, right_s, align="R", new_x="LMARGIN", new_y="NEXT")
                 else:
-                    pdf.ln(4.3 * scale_factor)
+                    pdf.ln(4.3 * line_scale)
 
                 for li in curr.find_all("li"):
                     li_text = _clean_text_for_pdf(li.get_text(" ", strip=True))
@@ -2723,7 +2720,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                         pdf.write(lh_bullet, "•  ")
                         cur_x = pdf.get_x()
                         pdf.multi_cell(pdf.w - margin_x - cur_x, lh_bullet, li_text, new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(0.6 * scale_factor)
+                pdf.ln(0.6 * line_scale)
 
             elif curr.name == "div" and "proj" in curr.get("class", []):
                 head_div = curr.find(class_="head")
@@ -2743,26 +2740,26 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                 pdf.set_font(font_name, "B", fs_body + 0.3)
                 if link_url:
                     pdf.set_text_color(*c_primary)
-                    pdf.write(4.3 * scale_factor, p_name, link=link_url)
+                    pdf.write(4.3 * line_scale, p_name, link=link_url)
                 else:
                     pdf.set_text_color(*c_dark)
-                    pdf.write(4.3 * scale_factor, p_name)
+                    pdf.write(4.3 * line_scale, p_name)
 
                 icon = head_div.find("svg") if head_div else None
                 if icon:
                     size = 2.0 * scale_factor
                     if pdf.get_x() + size + 1 > pdf.w - pdf.r_margin:
-                        pdf.ln(4.3 * scale_factor)
+                        pdf.ln(4.3 * line_scale)
                     _draw_pdf_icon(pdf, icon, pdf.get_x() + 0.7 * scale_factor,
-                                   pdf.get_y() + 1.15 * scale_factor, size,
+                                   pdf.get_y() + (4.3 * line_scale - size) / 2, size,
                                    info.get("primary_color", "#137f96"), link_url)
                     pdf.set_x(pdf.get_x() + size + 0.7 * scale_factor)
 
                 if clean_sub:
                     pdf.set_font(font_name, "I", fs_body - 0.4)
                     pdf.set_text_color(*c_muted)
-                    pdf.write(4.3 * scale_factor, f", {clean_sub}")
-                pdf.ln(4.3 * scale_factor)
+                    pdf.write(4.3 * line_scale, f", {clean_sub}")
+                pdf.ln(4.3 * line_scale)
                 pdf.c_margin = cell_margin
 
                 for li in curr.find_all("li"):
@@ -2774,7 +2771,7 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                         pdf.write(lh_bullet, "•  ")
                         cur_x = pdf.get_x()
                         pdf.multi_cell(pdf.w - margin_x - cur_x, lh_bullet, li_text, new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(0.6 * scale_factor)
+                pdf.ln(0.6 * line_scale)
 
             elif curr.name == "ul":
                 is_skills = "skills-list" in curr.get("class", []) or "skill" in sec_title.lower()
@@ -2813,10 +2810,10 @@ def _build_pdf_page(soup: BeautifulSoup, scale_factor: float = 1.0, flow_pages: 
                             pdf.write(lh_bullet, "•  ")
                             cur_x = pdf.get_x()
                             pdf.multi_cell(pdf.w - margin_x - cur_x, lh_bullet, li_text, new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(0.6 * scale_factor)
+                pdf.ln(0.6 * line_scale)
 
             curr = curr.next_sibling
-        pdf.ln(0.8 * scale_factor)
+        pdf.ln(0.8 * line_scale)
 
     return pdf
 
@@ -2834,8 +2831,11 @@ class PageOverflowError(ValueError):
 
 # Readability floor: the smallest body/bullet text stays at least 9pt.
 _PDF_MIN_SCALE = 1.0
-# Bottom of the usable area on A4 (297mm tall); content past this would clip.
-_PDF_MAX_Y_MM = 278.0
+_PDF_MAX_SCALE = 1.28
+_PDF_MAX_SPACING = 1.30
+_PDF_MARGIN_MM = 10.0
+# A4 is 297mm tall; all four margins use the same inset.
+_PDF_MAX_Y_MM = 297.0 - _PDF_MARGIN_MM
 
 
 def count_pdf_pages(pdf_path: Path | str) -> int:
@@ -2854,9 +2854,9 @@ def count_pdf_pages(pdf_path: Path | str) -> int:
 def _render_pdf_fallback(html_p: Path, pdf_p: Path, page_target: int | None = None) -> Path:
     """Pure-Python PDF generator with auto-fitted / target page handling.
 
-    Tries to fit on 1 page first by testing scale factors from spacious (1.20)
-    down to the 9pt floor (1.0). If content is short, it uses a larger font/spacing
-    to fill the page. If content is long, it scales down to 9pt to fit on 1 page.
+    Measures a balanced one-page fit with equal margins, bounded font sizes
+    and gentle line spacing. Short content is not stretched beyond those bounds.
+    Dense content scales down to the 9pt readability floor before using 2 pages.
     If the content cannot fit on 1 page even at 9pt, it flows onto 2 pages.
     Raises PageOverflowError when the content cannot fit the requested/maximum pages.
     """
@@ -2869,13 +2869,29 @@ def _render_pdf_fallback(html_p: Path, pdf_p: Path, page_target: int | None = No
     soup = BeautifulSoup(html_text, "html.parser")
 
     if page_target != 2:
-        # 1-page attempt: dynamically scale from 1.28 down to the 9pt minimum floor (1.0).
-        # We test largest to smallest so the first one that fits gives the best page-filling size.
-        for sf in (1.28, 1.24, 1.20, 1.16, 1.12, 1.08, 1.04, _PDF_MIN_SCALE):
-            pdf_attempt = _build_pdf_page(soup, scale_factor=sf)
-            if pdf_attempt.page_no() == 1 and pdf_attempt.get_y() <= _PDF_MAX_Y_MM:
-                pdf_attempt.output(str(pdf_p))
-                return pdf_p
+        def fit_single_page(factor: float) -> FPDF | None:
+            attempt = _build_pdf_page(
+                soup, scale_factor=min(factor, _PDF_MAX_SCALE),
+                spacing_factor=max(1.0, factor / _PDF_MAX_SCALE),
+            )
+            return attempt if attempt.page_no() == 1 and attempt.get_y() <= _PDF_MAX_Y_MM else None
+
+        # Enlarge readable type first, then gently open spacing to use spare height.
+        low, high = _PDF_MIN_SCALE, _PDF_MAX_SCALE * _PDF_MAX_SPACING
+        best = fit_single_page(high)
+        if best is None:
+            best = fit_single_page(low)
+            if best is not None:
+                for _ in range(8):
+                    mid = (low + high) / 2
+                    attempt = fit_single_page(mid)
+                    if attempt is None:
+                        high = mid
+                    else:
+                        low, best = mid, attempt
+        if best is not None:
+            best.output(str(pdf_p))
+            return pdf_p
         if page_target == 1:
             raise PageOverflowError(
                 "Resume content exceeds 1 page at the 9pt minimum font size. "
